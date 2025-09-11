@@ -5,8 +5,10 @@ import java.util.Objects;
 
 public class Product {
 
+	private Long id;
 	private String name;
 	private BigDecimal price;
+	private Long categoryId;
 
 	public String getName() {
 		return name;
@@ -41,7 +43,7 @@ public class Product {
 		return Objects.equals(name, other.name) && Objects.equals(price, other.price);
 	}
 
-	public Product(String name, BigDecimal price) {
+	public Product(String name, BigDecimal price, Long categoryId) {
 		if (name == null || name.isBlank()) {
 			throw new IllegalArgumentException("name must be valid");
 		}
@@ -51,8 +53,29 @@ public class Product {
 		if (price.compareTo(BigDecimal.ZERO) < 0) {
 			throw new IllegalArgumentException("price must be positive");
 		}
+		if (categoryId == null)
+			throw new IllegalArgumentException("categoryId must be provided");
+		if (categoryId <= 0)
+			throw new IllegalArgumentException("categoryId must be positive");
 
 		this.name = name.toLowerCase().trim();
 		this.price = price;
+		this.categoryId = categoryId;
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public Long getCategoryId() {
+		return categoryId;
+	}
+
+	public void setCategoryId(Long categoryId) {
+		this.categoryId = categoryId;
 	}
 }

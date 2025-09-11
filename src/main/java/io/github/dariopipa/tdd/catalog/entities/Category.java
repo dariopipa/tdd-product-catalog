@@ -4,6 +4,8 @@ import java.util.Objects;
 
 public class Category {
 
+	private Long id;
+
 	private String name;
 
 	public String getName() {
@@ -38,5 +40,13 @@ public class Category {
 			return false;
 		Category other = (Category) obj;
 		return Objects.equals(name, other.name);
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
 	}
 }
