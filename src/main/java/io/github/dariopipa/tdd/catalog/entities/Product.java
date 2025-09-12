@@ -26,23 +26,6 @@ public class Product {
 		this.price = price;
 	}
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(name, price);
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Product other = (Product) obj;
-		return Objects.equals(name, other.name) && Objects.equals(price, other.price);
-	}
-
 	public Product(String name, BigDecimal price, Long categoryId) {
 		if (name == null || name.isBlank()) {
 			throw new IllegalArgumentException("name must be valid");
@@ -61,6 +44,24 @@ public class Product {
 		this.name = name.toLowerCase().trim();
 		this.price = price;
 		this.categoryId = categoryId;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(categoryId, id, name, price);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Product other = (Product) obj;
+		return Objects.equals(categoryId, other.categoryId) && Objects.equals(id, other.id)
+				&& Objects.equals(name, other.name) && Objects.equals(price, other.price);
 	}
 
 	public Long getId() {

@@ -27,7 +27,7 @@ public class Category {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(name);
+		return Objects.hash(id, name);
 	}
 
 	@Override
@@ -39,7 +39,7 @@ public class Category {
 		if (getClass() != obj.getClass())
 			return false;
 		Category other = (Category) obj;
-		return Objects.equals(name, other.name);
+		return Objects.equals(id, other.id) && Objects.equals(name, other.name);
 	}
 
 	public Long getId() {
