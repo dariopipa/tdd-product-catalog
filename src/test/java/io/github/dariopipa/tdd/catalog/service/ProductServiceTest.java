@@ -93,10 +93,10 @@ public class ProductServiceTest {
 	public void test_createNewProductWithZeroPrice_ShouldBeCreated() {
 		when(productRepository.create(any(Product.class))).thenReturn(1L);
 
-		Long createdProduct = productService.create("Product Name", BigDecimal.ZERO, existingId);
+		Long createdProduct = productService.create("Product Name", zeroPrice, existingId);
 
 		assertThat(createdProduct).isEqualTo(1L);
-		verify(productRepository).create(new Product("Product Name", BigDecimal.ZERO, 1L));
+		verify(productRepository).create(new Product("Product Name", zeroPrice, 1L));
 	}
 
 	@Test
