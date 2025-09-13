@@ -86,6 +86,16 @@ public class CategoryServiceTest {
 	}
 
 	@Test
+	public void test_whenCategoryIdIsZero_shouldThrowIllegalArgumentExcpetion() {
+		when(categoryRepository.findById(0L)).thenReturn(null);
+
+		assertThatThrownBy(() -> categoryService.findById(0L)).isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("id must be positive");
+
+		verify(categoryRepository, never()).findById(0L);
+	}
+
+	@Test
 	public void test_whenCreatingEntityWithExistingName_shouldThrowCategoryNameAlreadyExistsExcpetion() {
 		when(categoryRepository.findByName(normalizedName)).thenReturn(new Category(normalizedName));
 
