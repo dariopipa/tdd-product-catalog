@@ -19,13 +19,20 @@ public class CategoryService {
 		return categoryRepository.create(category);
 	}
 
-	public String delete(long id) {
+	public String delete(Long id) {
 		findById(id);
 
 		return categoryRepository.delete(id);
 	}
 
-	public Category findById(long id) {
+	public Category findById(Long id) {
+		if (id == null) {
+			throw new IllegalArgumentException("id must be provided");
+		}
+		if (id <= 0) {
+			throw new IllegalArgumentException("id must be positive");
+		}
+
 		Category result = categoryRepository.findById(id);
 		if (result == null) {
 			throw new EntityNotFoundException("category with id:" + id + "not found");
@@ -34,11 +41,12 @@ public class CategoryService {
 		return result;
 	}
 
-	public Category update(long entity_Id, String name) {
+	public Category update(Long entity_Id, String name) {
 		findById(entity_Id);
-		findByName(name);
+		String normalizedName = validateAndNormalizeName(name);
+		findByName(normalizedName);
 
-		Category result = categoryRepository.update(entity_Id, name);
+		Category result = categoryRepository.update(entity_Id, normalizedName);
 
 		return result;
 	}
@@ -48,6 +56,19 @@ public class CategoryService {
 		if (result != null) {
 			throw new CategoryNameAlreadyExistsExcpetion();
 		}
+	}
+
+	private String validateAndNormalizeName(String raw) {
+		if (raw == null) {
+			throw new IllegalArgumentException("name must be provided");
+		}
+
+		String normalized = raw.strip().toLowerCase();
+
+		if (normalized.isBlank()) {
+			throw new IllegalArgumentException("name must be provided");
+		}
+		return normalized;
 	}
 
 }
