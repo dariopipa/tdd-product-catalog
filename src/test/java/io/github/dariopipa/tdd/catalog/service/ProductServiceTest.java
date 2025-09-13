@@ -32,6 +32,7 @@ public class ProductServiceTest {
 
 	private BigDecimal productPrice = new BigDecimal(111.11);
 	private BigDecimal negativeProductPrice = new BigDecimal(-111111);
+	private BigDecimal zeroPrice = new BigDecimal(0);
 	private Long existingId = 1L;
 	private Long nonExistingId = 999L;
 	private Long negativeId = -1L;
@@ -92,10 +93,10 @@ public class ProductServiceTest {
 	public void test_createNewProductWithZeroPrice_ShouldBeCreated() {
 		when(productRepository.create(any(Product.class))).thenReturn(1L);
 
-		Long createdProduct = productService.create("Product Name", BigDecimal.ZERO, existingId);
+		Long createdProduct = productService.create("Product Name", zeroPrice, existingId);
 
 		assertThat(createdProduct).isEqualTo(1L);
-		verify(productRepository).create(new Product("Product Name", BigDecimal.ZERO, 1L));
+		verify(productRepository).create(new Product("Product Name", zeroPrice, 1L));
 	}
 
 	@Test
@@ -165,13 +166,23 @@ public class ProductServiceTest {
 	}
 
 	@Test
-	public void test_findById_withNegativeId_throwsEntityNotFoundExcpetion() {
+	public void test_findById_withNegativeId_throwsIllegalArgumentException() {
 		when(productRepository.findById(negativeId)).thenReturn(null);
 
 		assertThatThrownBy(() -> productService.findById(negativeId)).isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("id must be positive");
 
 		verify(productRepository, never()).findById(negativeId);
+	}
+
+	@Test
+	public void test_findById_withZeroId_throwsIllegalArgumentException() {
+		when(productRepository.findById(0L)).thenReturn(null);
+
+		assertThatThrownBy(() -> productService.findById(0L)).isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("id must be positive");
+
+		verify(productRepository, never()).findById(0L);
 	}
 
 	@Test
@@ -210,6 +221,23 @@ public class ProductServiceTest {
 
 		assertThat(updatedProduct.getName()).isEqualTo(normalized);
 		verify(productRepository).update(existingId, normalized, productPrice, existingId);
+
+	}
+
+	@Test
+	public void test_updateWithPriceIsZero_returnNewUpdatedProduct() {
+		String normalized = "new name";
+
+		when(productRepository.findById(existingId)).thenReturn(new Product("oldName", productPrice, existingId));
+		when(productRepository.findByName(normalized)).thenReturn(null);
+		when(productRepository.update(existingId, normalized, zeroPrice, existingId))
+				.thenReturn(new Product(normalized, zeroPrice, existingId));
+
+		Product updatedProduct = productService.update(existingId, newName, zeroPrice, existingId);
+
+		assertThat(updatedProduct.getName()).isEqualTo(normalized);
+		assertThat(updatedProduct.getPrice()).isEqualTo(zeroPrice);
+		verify(productRepository).update(existingId, normalized, zeroPrice, existingId);
 
 	}
 
