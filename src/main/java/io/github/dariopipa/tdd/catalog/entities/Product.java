@@ -5,8 +5,10 @@ import java.util.Objects;
 
 public class Product {
 
+	private Long id;
 	private String name;
 	private BigDecimal price;
+	private Long categoryId;
 
 	public String getName() {
 		return name;
@@ -24,9 +26,29 @@ public class Product {
 		this.price = price;
 	}
 
+	public Product(String name, BigDecimal price, Long categoryId) {
+		if (name == null || name.isBlank()) {
+			throw new IllegalArgumentException("name must be valid");
+		}
+		if (price == null) {
+			throw new IllegalArgumentException("price must be added");
+		}
+		if (price.compareTo(BigDecimal.ZERO) < 0) {
+			throw new IllegalArgumentException("price must be positive");
+		}
+		if (categoryId == null)
+			throw new IllegalArgumentException("categoryId must be provided");
+		if (categoryId <= 0)
+			throw new IllegalArgumentException("categoryId must be positive");
+
+		this.name = name.toLowerCase().trim();
+		this.price = price;
+		this.categoryId = categoryId;
+	}
+
 	@Override
 	public int hashCode() {
-		return Objects.hash(name, price);
+		return Objects.hash(categoryId, id, name, price);
 	}
 
 	@Override
@@ -38,21 +60,23 @@ public class Product {
 		if (getClass() != obj.getClass())
 			return false;
 		Product other = (Product) obj;
-		return Objects.equals(name, other.name) && Objects.equals(price, other.price);
+		return Objects.equals(categoryId, other.categoryId) && Objects.equals(id, other.id)
+				&& Objects.equals(name, other.name) && Objects.equals(price, other.price);
 	}
 
-	public Product(String name, BigDecimal price) {
-		if (name == null || name.isBlank()) {
-			throw new IllegalArgumentException("name must be valid");
-		}
-		if (price == null) {
-			throw new IllegalArgumentException("price must be added");
-		}
-		if (price.compareTo(BigDecimal.ZERO) < 0) {
-			throw new IllegalArgumentException("price must be positive");
-		}
+	public Long getId() {
+		return id;
+	}
 
-		this.name = name.toLowerCase().trim();
-		this.price = price;
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public Long getCategoryId() {
+		return categoryId;
+	}
+
+	public void setCategoryId(Long categoryId) {
+		this.categoryId = categoryId;
 	}
 }
