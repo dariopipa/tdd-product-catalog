@@ -18,6 +18,7 @@ import org.mockito.Mockito;
 import io.github.dariopipa.tdd.catalog.entities.Category;
 import io.github.dariopipa.tdd.catalog.exceptions.CategoryNameAlreadyExistsExcpetion;
 import io.github.dariopipa.tdd.catalog.exceptions.EntityNotFoundException;
+import io.github.dariopipa.tdd.catalog.repository.CategoryRepository;
 
 public class CategoryServiceTest {
 
@@ -109,7 +110,7 @@ public class CategoryServiceTest {
 	@Test
 	public void test_whenCreatingEntity_withBlankName_shouldThrowIllegalArgumentExceptionWithNameMustBeValidMessage() {
 		assertThatThrownBy(() -> categoryService.createCategory("\t\t\t    "))
-				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name must be valid");
+				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name must be provided");
 
 		verify(categoryRepository, never()).create(any(Category.class));
 	}
@@ -117,19 +118,21 @@ public class CategoryServiceTest {
 	@Test
 	public void test_whenCreatingEntity_withEmptySpaces_shouldThrowIllegalArgumentExceptionWithNameMustBeValidMessage() {
 		assertThatThrownBy(() -> categoryService.createCategory(" ")).isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("name must be valid");
+				.hasMessageContaining("name must be provided");
 
 		verify(categoryRepository, never()).create(any(Category.class));
 	}
 
 	@Test
 	public void test_whenCreatingEntity_withNonNormalizedName_shouldCreateEntityWithNormalizedName() {
-		when(categoryRepository.create(new Category(newName))).thenReturn(entityId);
+		when(categoryRepository.findByName("new name")).thenReturn(null);
+		when(categoryRepository.create(any(Category.class))).thenReturn(entityId);
 
 		Long result = categoryService.createCategory(newName);
 
 		assertThat(result).isEqualTo(entityId);
-		verify(categoryRepository).create(new Category(newName));
+		verify(categoryRepository).findByName("new name");
+		verify(categoryRepository).create(any(Category.class));
 	}
 
 	@Test
@@ -144,7 +147,6 @@ public class CategoryServiceTest {
 		InOrder inOrder = Mockito.inOrder(categoryRepository);
 		inOrder.verify(categoryRepository).findById(entityId);
 		inOrder.verify(categoryRepository).delete(entityId);
-
 	}
 
 	@Test
@@ -160,17 +162,21 @@ public class CategoryServiceTest {
 
 	@Test
 	public void test_whenUpdatingExistingCategory_shouldReturnUpdatedName() {
-		when(categoryRepository.findById(entityId)).thenReturn(new Category("Old Name"));
+		Category existingCategory = new Category("Old Name");
+
+		when(categoryRepository.findById(entityId)).thenReturn(existingCategory);
 		when(categoryRepository.findByName(normalizedName)).thenReturn(null);
-		when(categoryRepository.update(entityId, normalizedName)).thenReturn(new Category(normalizedName));
+		when(categoryRepository.update(existingCategory)).thenReturn(new Category(normalizedName));
 
 		Category categoryResult = categoryService.update(entityId, newName);
+
 		assertThat(categoryResult.getName()).isEqualTo(normalizedName);
+		assertThat(existingCategory.getName()).isEqualTo(normalizedName);
 
 		InOrder inOrder = inOrder(categoryRepository);
 		inOrder.verify(categoryRepository).findById(entityId);
 		inOrder.verify(categoryRepository).findByName(normalizedName);
-		inOrder.verify(categoryRepository).update(entityId, normalizedName);
+		inOrder.verify(categoryRepository).update(existingCategory);
 	}
 
 	@Test
@@ -184,7 +190,7 @@ public class CategoryServiceTest {
 
 		verify(categoryRepository).findById(nonExistingId);
 		verify(categoryRepository, never()).findByName(newName);
-		verify(categoryRepository, never()).update(nonExistingId, newName);
+		verify(categoryRepository, never()).update(new Category(newName));
 	}
 
 	@Test
@@ -197,7 +203,7 @@ public class CategoryServiceTest {
 
 		verify(categoryRepository).findById(entityId);
 		verify(categoryRepository).findByName(normalizedName);
-		verify(categoryRepository, never()).update(entityId, normalizedName);
+		verify(categoryRepository, never()).update(any(Category.class));
 	}
 
 	@Test
@@ -210,7 +216,7 @@ public class CategoryServiceTest {
 
 		verify(categoryRepository).findById(entityId);
 		verify(categoryRepository, never()).findByName(normalizedName);
-		verify(categoryRepository, never()).update(entityId, newName);
+		verify(categoryRepository, never()).update(any(Category.class));
 	}
 
 	@Test
@@ -223,6 +229,6 @@ public class CategoryServiceTest {
 
 		verify(categoryRepository).findById(entityId);
 		verify(categoryRepository, never()).findByName(normalizedName);
-		verify(categoryRepository, never()).update(entityId, newName);
+		verify(categoryRepository, never()).update(any(Category.class));
 	}
 }
