@@ -1,14 +1,46 @@
 package io.github.dariopipa.tdd.catalog.entities;
 
 import java.math.BigDecimal;
-import java.util.Objects;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "products")
 public class Product {
 
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
+
+	@Column(nullable = false)
 	private String name;
+
+	@Column(nullable = false)
 	private BigDecimal price;
-	private Long categoryId;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "category_id", nullable = false)
+	private Category category;
+
+	// JPA Needed Constructor.
+	protected Product() {
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
 
 	public String getName() {
 		return name;
@@ -26,57 +58,18 @@ public class Product {
 		this.price = price;
 	}
 
-	public Product(String name, BigDecimal price, Long categoryId) {
-		if (name == null || name.isBlank()) {
-			throw new IllegalArgumentException("name must be valid");
-		}
-		if (price == null) {
-			throw new IllegalArgumentException("price must be added");
-		}
-		if (price.compareTo(BigDecimal.ZERO) < 0) {
-			throw new IllegalArgumentException("price must be positive");
-		}
-		if (categoryId == null)
-			throw new IllegalArgumentException("categoryId must be provided");
-		if (categoryId <= 0)
-			throw new IllegalArgumentException("categoryId must be positive");
+	public Category getCategory() {
+		return category;
+	}
 
-		this.name = name.toLowerCase().trim();
+	public void setCategory(Category category) {
+		this.category = category;
+	}
+
+	public Product(String name, BigDecimal price, Category category) {
+		this.name = name;
 		this.price = price;
-		this.categoryId = categoryId;
+		this.category = category;
 	}
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(categoryId, id, name, price);
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Product other = (Product) obj;
-		return Objects.equals(categoryId, other.categoryId) && Objects.equals(id, other.id)
-				&& Objects.equals(name, other.name) && Objects.equals(price, other.price);
-	}
-
-	public Long getId() {
-		return id;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
-
-	public Long getCategoryId() {
-		return categoryId;
-	}
-
-	public void setCategoryId(Long categoryId) {
-		this.categoryId = categoryId;
-	}
 }
