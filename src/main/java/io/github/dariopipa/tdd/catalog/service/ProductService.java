@@ -62,9 +62,9 @@ public class ProductService {
 	}
 
 	public void delete(Long id) {
-		findById(id);
+		Product existingProduct = findById(id);
 
-		productRepository.delete(id);
+		productRepository.delete(existingProduct);
 		return;
 	}
 

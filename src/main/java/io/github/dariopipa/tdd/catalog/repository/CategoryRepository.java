@@ -6,7 +6,7 @@ public interface CategoryRepository {
 
 	Long create(Category category);
 
-	String delete(Long id);
+	String delete(Category category);
 
 	Category findById(Long id);
 

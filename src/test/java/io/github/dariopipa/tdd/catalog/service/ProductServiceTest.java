@@ -396,12 +396,14 @@ public class ProductServiceTest {
 
 	@Test
 	public void test_deleteWhenIdExists_shouldReturnVoid() {
-		when(productRepository.findById(existingId)).thenReturn(new Product(existingName, productPrice, newCategory));
-		doNothing().when(productRepository).delete(existingId);
+		Product existingProduct = new Product(existingName, productPrice, newCategory);
+
+		when(productRepository.findById(existingId)).thenReturn(existingProduct);
+		doNothing().when(productRepository).delete(existingProduct);
 
 		productService.delete(existingId);
 
-		verify(productRepository, times(1)).delete(existingId);
+		verify(productRepository, times(1)).delete(existingProduct);
 	}
 
 	@Test
@@ -411,7 +413,7 @@ public class ProductServiceTest {
 		assertThatThrownBy(() -> productService.delete(nonExistingId)).isInstanceOf(EntityNotFoundException.class)
 				.hasMessageContaining("product with id: " + nonExistingId + " not found");
 
-		verify(productRepository, never()).delete(nonExistingId);
+		verify(productRepository, never()).delete(null);
 	}
 
 }

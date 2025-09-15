@@ -7,7 +7,7 @@ import io.github.dariopipa.tdd.catalog.entities.Product;
 public interface ProductRepository {
 	Long create(Product product);
 
-	void delete(Long id);
+	void delete(Product product);
 
 	Product findById(Long id);
 

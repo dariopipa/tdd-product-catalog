@@ -22,9 +22,9 @@ public class CategoryService {
 	}
 
 	public String delete(Long id) {
-		findById(id);
+		Category existingCategory = findById(id);
 
-		return categoryRepository.delete(id);
+		return categoryRepository.delete(existingCategory);
 	}
 
 	public Category findById(Long id) {
@@ -61,12 +61,12 @@ public class CategoryService {
 		}
 	}
 
-	private String validateAndNormalizeName(String raw) {
-		if (raw == null) {
+	private String validateAndNormalizeName(String name) {
+		if (name == null) {
 			throw new IllegalArgumentException("name must be provided");
 		}
 
-		String normalized = raw.strip().toLowerCase();
+		String normalized = name.strip().toLowerCase();
 
 		if (normalized.isBlank()) {
 			throw new IllegalArgumentException("name must be provided");
