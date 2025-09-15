@@ -3,6 +3,7 @@ package io.github.dariopipa.tdd.catalog.service;
 import io.github.dariopipa.tdd.catalog.entities.Category;
 import io.github.dariopipa.tdd.catalog.exceptions.CategoryNameAlreadyExistsExcpetion;
 import io.github.dariopipa.tdd.catalog.exceptions.EntityNotFoundException;
+import io.github.dariopipa.tdd.catalog.repository.CategoryRepository;
 
 public class CategoryService {
 
@@ -13,16 +14,17 @@ public class CategoryService {
 	}
 
 	public Long createCategory(String name) {
-		findByName(name);
+		String normalizedName = validateAndNormalizeName(name);
+		findByName(normalizedName);
 
-		Category category = new Category(name);
+		Category category = new Category(normalizedName);
 		return categoryRepository.create(category);
 	}
 
 	public String delete(Long id) {
-		findById(id);
+		Category existingCategory = findById(id);
 
-		return categoryRepository.delete(id);
+		return categoryRepository.delete(existingCategory);
 	}
 
 	public Category findById(Long id) {
@@ -42,11 +44,12 @@ public class CategoryService {
 	}
 
 	public Category update(Long entity_Id, String name) {
-		findById(entity_Id);
+		Category existingCategory = findById(entity_Id);
 		String normalizedName = validateAndNormalizeName(name);
 		findByName(normalizedName);
 
-		Category result = categoryRepository.update(entity_Id, normalizedName);
+		existingCategory.setName(normalizedName);
+		Category result = categoryRepository.update(existingCategory);
 
 		return result;
 	}
@@ -58,12 +61,12 @@ public class CategoryService {
 		}
 	}
 
-	private String validateAndNormalizeName(String raw) {
-		if (raw == null) {
+	private String validateAndNormalizeName(String name) {
+		if (name == null) {
 			throw new IllegalArgumentException("name must be provided");
 		}
 
-		String normalized = raw.strip().toLowerCase();
+		String normalized = name.strip().toLowerCase();
 
 		if (normalized.isBlank()) {
 			throw new IllegalArgumentException("name must be provided");

@@ -3,9 +3,11 @@ package io.github.dariopipa.tdd.catalog.service;
 import java.math.BigDecimal;
 import java.util.List;
 
+import io.github.dariopipa.tdd.catalog.entities.Category;
 import io.github.dariopipa.tdd.catalog.entities.Product;
 import io.github.dariopipa.tdd.catalog.exceptions.EntityNotFoundException;
 import io.github.dariopipa.tdd.catalog.exceptions.ProductNameAlreadyExistsExcpetion;
+import io.github.dariopipa.tdd.catalog.repository.ProductRepository;
 
 public class ProductService {
 
@@ -19,12 +21,13 @@ public class ProductService {
 	}
 
 	public Long create(String name, BigDecimal price, Long categoryId) {
-		categoryService.findById(categoryId);
-
+		Category category = categoryService.findById(categoryId);
 		String normalized = validateAndNormalizeName(name);
-		findByName(normalized);
 
-		return productRepository.create(new Product(normalized, price, categoryId));
+		findByName(normalized);
+		validatePrice(price);
+
+		return productRepository.create(new Product(normalized, price, category));
 	}
 
 	public Product findById(Long id) {
@@ -44,20 +47,24 @@ public class ProductService {
 	}
 
 	public Product update(Long id, String name, BigDecimal price, Long categoryId) {
-		this.findById(id);
-		categoryService.findById(categoryId);
+		Product existingProduct = this.findById(id);
+		Category category = categoryService.findById(categoryId);
 
 		String normalized = validateAndNormalizeName(name);
 		findByName(normalized);
 		validatePrice(price);
 
-		return productRepository.update(id, normalized, price, categoryId);
+		existingProduct.setName(normalized);
+		existingProduct.setPrice(price);
+		existingProduct.setCategory(category);
+
+		return productRepository.update(existingProduct);
 	}
 
 	public void delete(Long id) {
-		findById(id);
+		Product existingProduct = findById(id);
 
-		productRepository.delete(id);
+		productRepository.delete(existingProduct);
 		return;
 	}
 
@@ -78,15 +85,15 @@ public class ProductService {
 		}
 	}
 
-	private String validateAndNormalizeName(String raw) {
-		if (raw == null) {
+	private String validateAndNormalizeName(String name) {
+		if (name == null) {
 			throw new IllegalArgumentException("name must be provided");
 		}
 
-		String normalized = raw.strip().toLowerCase();
+		String normalized = name.strip().toLowerCase();
 
 		if (normalized.isBlank()) {
-			throw new IllegalArgumentException("name must be provided");
+			throw new IllegalArgumentException("name must contain valid characters");
 		}
 		return normalized;
 	}

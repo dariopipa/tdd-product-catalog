@@ -1,4 +1,4 @@
-package io.github.dariopipa.tdd.catalog.service;
+package io.github.dariopipa.tdd.catalog.repository;
 
 import io.github.dariopipa.tdd.catalog.entities.Category;
 
@@ -6,11 +6,11 @@ public interface CategoryRepository {
 
 	Long create(Category category);
 
-	String delete(Long id);
+	String delete(Category category);
 
 	Category findById(Long id);
 
 	Category findByName(String name);
 
-	Category update(Long id, String name);
+	Category update(Category category);
 }

@@ -1,20 +1,19 @@
-package io.github.dariopipa.tdd.catalog.service;
+package io.github.dariopipa.tdd.catalog.repository;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 import io.github.dariopipa.tdd.catalog.entities.Product;
 
 public interface ProductRepository {
-	Long create(Product Product);
+	Long create(Product product);
 
-	void delete(Long id);
+	void delete(Product product);
 
 	Product findById(Long id);
 
 	Product findByName(String name);
 
-	Product update(Long id, String name, BigDecimal price, Long categoryId);
+	Product update(Product product);
 
 	List<Product> findAll();
 }
