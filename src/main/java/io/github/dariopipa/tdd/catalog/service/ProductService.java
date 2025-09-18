@@ -8,64 +8,77 @@ import io.github.dariopipa.tdd.catalog.entities.Product;
 import io.github.dariopipa.tdd.catalog.exceptions.EntityNotFoundException;
 import io.github.dariopipa.tdd.catalog.exceptions.ProductNameAlreadyExistsExcpetion;
 import io.github.dariopipa.tdd.catalog.repository.ProductRepository;
+import io.github.dariopipa.tdd.catalog.transactionManger.TransactionManager;
 
 public class ProductService {
 
 	private ProductRepository productRepository;
 	private CategoryService categoryService;
+	private TransactionManager transactionManager;
 
-	public ProductService(ProductRepository productRepository, CategoryService categoryService) {
+	public ProductService(ProductRepository productRepository, CategoryService categoryService,
+			TransactionManager transactionManager) {
 
 		this.productRepository = productRepository;
 		this.categoryService = categoryService;
+		this.transactionManager = transactionManager;
 	}
 
 	public Long create(String name, BigDecimal price, Long categoryId) {
-		Category category = categoryService.findById(categoryId);
-		String normalized = validateAndNormalizeName(name);
+		return transactionManager.doInTransaction(() -> {
+			Category category = categoryService.findById(categoryId);
+			String normalized = validateAndNormalizeName(name);
 
-		findByName(normalized);
-		validatePrice(price);
+			findByName(normalized);
+			validatePrice(price);
 
-		return productRepository.create(new Product(normalized, price, category));
+			return productRepository.create(new Product(normalized, price, category));
+		});
 	}
 
 	public Product findById(Long id) {
 		validateId(id);
 
-		Product resultProduct = productRepository.findById(id);
-		if (resultProduct == null) {
-			throw new EntityNotFoundException("product with id: " + id + " not found");
-		}
+		return transactionManager.doInTransaction(() -> {
+			Product resultProduct = productRepository.findById(id);
+			if (resultProduct == null) {
+				throw new EntityNotFoundException("product with id: " + id + " not found");
+			}
 
-		return resultProduct;
+			return resultProduct;
+		});
 	}
 
 	public List<Product> findAll() {
-
-		return productRepository.findAll();
+		return transactionManager.doInTransaction(() -> {
+			return productRepository.findAll();
+		});
 	}
 
 	public Product update(Long id, String name, BigDecimal price, Long categoryId) {
-		Product existingProduct = this.findById(id);
-		Category category = categoryService.findById(categoryId);
+		return transactionManager.doInTransaction(() -> {
+			Product existingProduct = this.findById(id);
+			Category category = categoryService.findById(categoryId);
 
-		String normalized = validateAndNormalizeName(name);
-		findByName(normalized);
-		validatePrice(price);
+			String normalized = validateAndNormalizeName(name);
+			findByName(normalized);
+			validatePrice(price);
 
-		existingProduct.setName(normalized);
-		existingProduct.setPrice(price);
-		existingProduct.setCategory(category);
+			existingProduct.setName(normalized);
+			existingProduct.setPrice(price);
+			existingProduct.setCategory(category);
 
-		return productRepository.update(existingProduct);
+			return productRepository.update(existingProduct);
+		});
 	}
 
 	public void delete(Long id) {
-		Product existingProduct = findById(id);
+		transactionManager.doInTransaction(() -> {
+			Product existingProduct = findById(id);
 
-		productRepository.delete(existingProduct);
-		return;
+			productRepository.delete(existingProduct);
+			return null;
+		});
 	}
 
 	private void validateId(Long id) {
