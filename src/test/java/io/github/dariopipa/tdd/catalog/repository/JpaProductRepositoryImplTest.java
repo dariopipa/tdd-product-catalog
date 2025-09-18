@@ -1,13 +1,8 @@
 package io.github.dariopipa.tdd.catalog.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Before;
@@ -16,131 +11,156 @@ import org.junit.Test;
 import io.github.dariopipa.tdd.catalog.entities.Category;
 import io.github.dariopipa.tdd.catalog.entities.Product;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.NoResultException;
-import jakarta.persistence.TypedQuery;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.Persistence;
 
 public class JpaProductRepositoryImplTest {
 
+	private EntityManagerFactory entityManagerFactory;
 	private JpaProductRepositoryImpl jpaProductRepositoryImpl;
 	private EntityManager entityManager;
+	private EntityTransaction transaction;
 	private Category category;
-	private TypedQuery<Product> query;
+	private Long nonExistentId = 999L;
+	private BigDecimal productPrice = BigDecimal.valueOf(100);
+	private String productName = "laptop";
 
 	@Before
 	public void setup() {
-		entityManager = mock(EntityManager.class);
+		entityManagerFactory = Persistence.createEntityManagerFactory("product-catalog-IM-PU");
+		entityManager = entityManagerFactory.createEntityManager();
 		jpaProductRepositoryImpl = new JpaProductRepositoryImpl(entityManager);
-		category = new Category("Category");
-		query = mock(TypedQuery.class);
+		transaction = entityManager.getTransaction();
 
+		category = new Category("electronics");
+		transaction.begin();
+		entityManager.persist(category);
+		transaction.commit();
 	}
 
 	@Test
 	public void test_createProductEntityInDatabase() {
-		Product product = new Product("product", BigDecimal.ZERO, category);
-		product.setId(12L);
+		Product product = new Product(productName, productPrice, category);
 
+		transaction.begin();
 		Long result = jpaProductRepositoryImpl.create(product);
+		transaction.commit();
 
-		verify(entityManager, times(1)).persist(product);
-		assertThat(result).isEqualTo(12L);
+		assertThat(result).isNotNull();
+		assertThat(product.getId()).isEqualTo(result);
+
+		Product found = entityManager.find(Product.class, result);
+		assertThat(found).isNotNull();
+		assertThat(found.getName()).isEqualTo("laptop");
+		assertThat(found.getPrice()).isEqualTo(productPrice);
 	}
 
 	@Test
 	public void test_findByExistingId_shouldReturnEntity() {
-		Long productId = 12L;
-		Product expectedProduct = new Product("product", BigDecimal.ZERO, category);
-		expectedProduct.setId(productId);
+		Product product = new Product(productName, productPrice, category);
+		transaction.begin();
+		entityManager.persist(product);
+		transaction.commit();
 
-		when(entityManager.find(Product.class, productId)).thenReturn(expectedProduct);
+		Long productId = product.getId();
 		Product result = jpaProductRepositoryImpl.findById(productId);
 
-		assertThat(result).isEqualTo(expectedProduct);
+		assertThat(result).isNotNull();
+		assertThat(result.getName()).isEqualTo("laptop");
+		assertThat(result.getPrice()).isEqualTo(productPrice);
 		assertThat(result.getId()).isEqualTo(productId);
-		verify(entityManager).find(Product.class, productId);
+		assertThat(result.getCategory().getName()).isEqualTo("electronics");
 	}
 
 	@Test
 	public void test_findByNonExistingId_shouldReturnNull() {
-		Long nonExistentId = 999L;
-
-		when(entityManager.find(Product.class, nonExistentId)).thenReturn(null);
 		Product result = jpaProductRepositoryImpl.findById(nonExistentId);
 
 		assertThat(result).isNull();
-		verify(entityManager).find(Product.class, nonExistentId);
 	}
 
 	@Test
 	public void test_deleteById_shouldReturnVoid() {
-		Long existentId = 1L;
-		Product expectedProduct = new Product("product", BigDecimal.ZERO, category);
+		Product product = new Product(productName, productPrice, category);
 
-		when(entityManager.find(Product.class, existentId)).thenReturn(expectedProduct);
-		jpaProductRepositoryImpl.delete(expectedProduct);
+		transaction.begin();
+		entityManager.persist(product);
+		transaction.commit();
+		Long productId = product.getId();
 
-		verify(entityManager).remove(expectedProduct);
+		transaction.begin();
+		jpaProductRepositoryImpl.delete(product);
+		transaction.commit();
+
+		Product found = entityManager.find(Product.class, productId);
+		assertThat(found).isNull();
 	}
 
 	@Test
 	public void test_updateCategory_shouldReturnUpdatedProduct() {
-		Product updatedProduct = new Product("product", BigDecimal.ZERO, category);
+		Product product = new Product(productName, BigDecimal.ZERO, category);
 
-		when(entityManager.merge(updatedProduct)).thenReturn(updatedProduct);
+		transaction.begin();
+		entityManager.persist(product);
+		transaction.commit();
+		Long productId = product.getId();
 
-		Product result = jpaProductRepositoryImpl.update(updatedProduct);
+		product.setName("updated product name");
+		product.setPrice(productPrice);
 
-		assertThat(result).isEqualTo(updatedProduct);
-		verify(entityManager, times(1)).merge(updatedProduct);
+		transaction.begin();
+		Product result = jpaProductRepositoryImpl.update(product);
+		transaction.commit();
+
+		assertThat(result).isNotNull();
+		assertThat(result.getName()).isEqualTo("updated product name");
+		assertThat(result.getPrice()).isEqualTo(productPrice);
+
+		Product found = entityManager.find(Product.class, productId);
+		assertThat(found).isNotNull();
+		assertThat(found.getName()).isEqualTo("updated product name");
+		assertThat(found.getPrice()).isEqualTo(productPrice);
 	}
 
 	@Test
 	public void test_findByName_shouldReturnFoundProduct() {
-		String productName = "product";
-		Product expectedProduct = new Product("product", BigDecimal.ZERO, category);
-
-		when(entityManager.createQuery("SELECT p FROM Product p WHERE p.name = :name", Product.class))
-				.thenReturn(query);
-		when(query.setParameter("name", productName)).thenReturn(query);
-		when(query.getSingleResult()).thenReturn(expectedProduct);
+		Product product = new Product(productName, productPrice, category);
+		transaction.begin();
+		entityManager.persist(product);
+		transaction.commit();
 
 		Product result = jpaProductRepositoryImpl.findByName(productName);
 
-		assertThat(result).isEqualTo(expectedProduct);
+		assertThat(result).isNotNull();
 		assertThat(result.getName()).isEqualTo(productName);
-
-		verify(entityManager).createQuery("SELECT p FROM Product p WHERE p.name = :name", Product.class);
-		verify(query).setParameter("name", productName);
-		verify(query).getSingleResult();
+		assertThat(result.getPrice()).isEqualTo(productPrice);
+		assertThat(result.getId()).isEqualTo(product.getId());
+		assertThat(result.getCategory().getName()).isEqualTo("electronics");
 	}
 
 	@Test
 	public void test_findByNonExistentName_shouldReturnNull() {
 		String nonExistentProductName = "does not exist";
 
-		when(entityManager.createQuery("SELECT p FROM Product p WHERE p.name = :name", Product.class))
-				.thenReturn(query);
-		when(query.setParameter("name", nonExistentProductName)).thenReturn(query);
-		when(query.getSingleResult()).thenThrow(NoResultException.class);
-
 		Product result = jpaProductRepositoryImpl.findByName(nonExistentProductName);
 
-		assertThat(result).isEqualTo(null);
+		assertThat(result).isNull();
 	}
 
 	@Test
 	public void test_findAll_shouldReturnListOfProducts() {
-		List<Product> expected = Arrays.asList(new Product("product1", BigDecimal.ZERO, category),
-				new Product("product2", BigDecimal.ZERO, category));
+		Product product1 = new Product(productName, productPrice, category);
+		Product product2 = new Product("iphone", BigDecimal.valueOf(1.111111), category);
 
-		when(entityManager.createQuery("SELECT p FROM Product p", Product.class)).thenReturn(query);
-		when(query.getResultList()).thenReturn(expected);
+		transaction.begin();
+		entityManager.persist(product1);
+		entityManager.persist(product2);
+		transaction.commit();
 
 		List<Product> result = jpaProductRepositoryImpl.findAll();
 
-		assertThat(result).isSameAs(expected);
-		verify(entityManager).createQuery("SELECT p FROM Product p", Product.class);
-		verify(query).getResultList();
-
+		assertThat(result).hasSize(2);
+		assertThat(result).contains(product1, product2);
 	}
 }
