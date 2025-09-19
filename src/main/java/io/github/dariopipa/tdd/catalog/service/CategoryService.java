@@ -1,5 +1,7 @@
 package io.github.dariopipa.tdd.catalog.service;
 
+import java.util.List;
+
 import io.github.dariopipa.tdd.catalog.entities.Category;
 import io.github.dariopipa.tdd.catalog.exceptions.CategoryNameAlreadyExistsExcpetion;
 import io.github.dariopipa.tdd.catalog.exceptions.EntityNotFoundException;
@@ -31,6 +33,12 @@ public class CategoryService {
 		return transactionManager.doInTransaction(() -> {
 			Category existingCategory = findById(id);
 			return categoryRepository.delete(existingCategory);
+		});
+	}
+
+	public List<Category> findAll() {
+		return transactionManager.doInTransaction(() -> {
+			return categoryRepository.findAll();
 		});
 	}
 
