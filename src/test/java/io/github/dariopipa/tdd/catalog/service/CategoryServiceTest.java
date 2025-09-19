@@ -2,10 +2,12 @@ package io.github.dariopipa.tdd.catalog.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.AdditionalAnswers.answer;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -18,11 +20,14 @@ import io.github.dariopipa.tdd.catalog.entities.Category;
 import io.github.dariopipa.tdd.catalog.exceptions.CategoryNameAlreadyExistsExcpetion;
 import io.github.dariopipa.tdd.catalog.exceptions.EntityNotFoundException;
 import io.github.dariopipa.tdd.catalog.repository.CategoryRepository;
+import io.github.dariopipa.tdd.catalog.transactionManger.TransactionCode;
+import io.github.dariopipa.tdd.catalog.transactionManger.TransactionManager;
 
 public class CategoryServiceTest {
 
 	private CategoryService categoryService;
 	private CategoryRepository categoryRepository;
+	private TransactionManager transactionManager;
 
 	private final long entityId = 1L;
 	private final long nonExistingId = 999L;
@@ -32,7 +37,11 @@ public class CategoryServiceTest {
 	@Before
 	public void setup() {
 		categoryRepository = mock(CategoryRepository.class);
-		categoryService = new CategoryService(categoryRepository);
+		transactionManager = mock(TransactionManager.class);
+
+		when(transactionManager.doInTransaction(any())).thenAnswer(answer((TransactionCode<?> code) -> code.execute()));
+
+		categoryService = new CategoryService(categoryRepository, transactionManager);
 	}
 
 	@Test
@@ -42,6 +51,7 @@ public class CategoryServiceTest {
 		Long result = categoryService.createCategory("tech");
 
 		assertThat(result).isEqualTo(entityId);
+		verify(transactionManager).doInTransaction(any());
 		verify(categoryRepository).create(any(Category.class));
 	}
 
@@ -53,6 +63,7 @@ public class CategoryServiceTest {
 		Category category = categoryService.findById(entityId);
 
 		assertThat(category.getName()).isEqualTo("tech");
+		verify(transactionManager).doInTransaction(any());
 		verify(categoryRepository).findById(entityId);
 	}
 
@@ -62,6 +73,8 @@ public class CategoryServiceTest {
 
 		assertThatThrownBy(() -> categoryService.findById(nonExistingId)).isInstanceOf(EntityNotFoundException.class)
 				.hasMessage("category with id:" + nonExistingId + "not found");
+
+		verify(transactionManager).doInTransaction(any());
 		verify(categoryRepository).findById(nonExistingId);
 	}
 
@@ -72,6 +85,7 @@ public class CategoryServiceTest {
 		assertThatThrownBy(() -> categoryService.findById(null)).isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("id must be provided");
 
+		verify(transactionManager).doInTransaction(any());
 		verify(categoryRepository, never()).findById(null);
 	}
 
@@ -82,6 +96,7 @@ public class CategoryServiceTest {
 		assertThatThrownBy(() -> categoryService.findById(-1L)).isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("id must be positive");
 
+		verify(transactionManager).doInTransaction(any());
 		verify(categoryRepository, never()).findById(-1L);
 	}
 
@@ -92,6 +107,7 @@ public class CategoryServiceTest {
 		assertThatThrownBy(() -> categoryService.findById(0L)).isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("id must be positive");
 
+		verify(transactionManager).doInTransaction(any());
 		verify(categoryRepository, never()).findById(0L);
 	}
 
@@ -102,6 +118,7 @@ public class CategoryServiceTest {
 		assertThatThrownBy(() -> categoryService.createCategory(normalizedName))
 				.isInstanceOf(CategoryNameAlreadyExistsExcpetion.class);
 
+		verify(transactionManager).doInTransaction(any());
 		verify(categoryRepository).findByName(normalizedName);
 		verify(categoryRepository, never()).create(any(Category.class));
 	}
@@ -111,6 +128,7 @@ public class CategoryServiceTest {
 		assertThatThrownBy(() -> categoryService.createCategory("\t\t\t    "))
 				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name must be provided");
 
+		verify(transactionManager).doInTransaction(any());
 		verify(categoryRepository, never()).create(any(Category.class));
 	}
 
@@ -130,6 +148,7 @@ public class CategoryServiceTest {
 		Long result = categoryService.createCategory(newName);
 
 		assertThat(result).isEqualTo(entityId);
+		verify(transactionManager).doInTransaction(any());
 		verify(categoryRepository).findByName("new name");
 		verify(categoryRepository).create(any(Category.class));
 	}
@@ -145,7 +164,8 @@ public class CategoryServiceTest {
 
 		assertThat(result).isEqualTo("Deleted");
 
-		InOrder inOrder = Mockito.inOrder(categoryRepository);
+		InOrder inOrder = Mockito.inOrder(categoryRepository, transactionManager);
+		verify(transactionManager, times(2)).doInTransaction(any());
 		inOrder.verify(categoryRepository).findById(entityId);
 		inOrder.verify(categoryRepository).delete(existingCategory);
 	}
@@ -156,7 +176,8 @@ public class CategoryServiceTest {
 
 		assertThatThrownBy(() -> categoryService.delete(nonExistingId)).isInstanceOf(EntityNotFoundException.class)
 				.hasMessage("category with id:" + nonExistingId + "not found");
-		;
+
+		verify(transactionManager, times(2)).doInTransaction(any());
 		verify(categoryRepository).findById(nonExistingId);
 		verify(categoryRepository, never()).delete(any());
 	}
@@ -174,7 +195,8 @@ public class CategoryServiceTest {
 		assertThat(categoryResult.getName()).isEqualTo(normalizedName);
 		assertThat(existingCategory.getName()).isEqualTo(normalizedName);
 
-		InOrder inOrder = inOrder(categoryRepository);
+		InOrder inOrder = inOrder(categoryRepository, transactionManager);
+		inOrder.verify(transactionManager).doInTransaction(any());
 		inOrder.verify(categoryRepository).findById(entityId);
 		inOrder.verify(categoryRepository).findByName(normalizedName);
 		inOrder.verify(categoryRepository).update(existingCategory);
@@ -187,8 +209,8 @@ public class CategoryServiceTest {
 		assertThatThrownBy(() -> categoryService.update(nonExistingId, newName))
 				.isInstanceOf(EntityNotFoundException.class)
 				.hasMessage("category with id:" + nonExistingId + "not found");
-		;
 
+		verify(transactionManager).doInTransaction(any());
 		verify(categoryRepository).findById(nonExistingId);
 		verify(categoryRepository, never()).findByName(newName);
 		verify(categoryRepository, never()).update(new Category(newName));
@@ -202,6 +224,7 @@ public class CategoryServiceTest {
 		assertThatThrownBy(() -> categoryService.update(entityId, newName))
 				.isInstanceOf(CategoryNameAlreadyExistsExcpetion.class);
 
+		verify(transactionManager, times(2)).doInTransaction(any());
 		verify(categoryRepository).findById(entityId);
 		verify(categoryRepository).findByName(normalizedName);
 		verify(categoryRepository, never()).update(any(Category.class));
@@ -215,6 +238,7 @@ public class CategoryServiceTest {
 		assertThatThrownBy(() -> categoryService.update(entityId, null)).isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("name must be provided");
 
+		verify(transactionManager, times(2)).doInTransaction(any());
 		verify(categoryRepository).findById(entityId);
 		verify(categoryRepository, never()).findByName(normalizedName);
 		verify(categoryRepository, never()).update(any(Category.class));
@@ -228,6 +252,7 @@ public class CategoryServiceTest {
 		assertThatThrownBy(() -> categoryService.update(entityId, "\t \t \t "))
 				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name must be provided");
 
+		verify(transactionManager, times(2)).doInTransaction(any());
 		verify(categoryRepository).findById(entityId);
 		verify(categoryRepository, never()).findByName(normalizedName);
 		verify(categoryRepository, never()).update(any(Category.class));

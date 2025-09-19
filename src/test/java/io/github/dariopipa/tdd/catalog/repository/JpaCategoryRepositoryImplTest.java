@@ -1,126 +1,131 @@
 package io.github.dariopipa.tdd.catalog.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import io.github.dariopipa.tdd.catalog.entities.Category;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.NoResultException;
-import jakarta.persistence.TypedQuery;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.Persistence;
 
 public class JpaCategoryRepositoryImplTest {
 
+	private EntityManagerFactory entityManagerFactory;
 	private JpaCategoryRepositoryImpl jpaCategoryRepositoryImpl;
 	private EntityManager entityManager;
-	private TypedQuery<Category> query;
+	private EntityTransaction transaction;
+	private Long nonExistentId = 999L;
 
 	@Before
 	public void setup() {
-		entityManager = mock(EntityManager.class);
+		entityManagerFactory = Persistence.createEntityManagerFactory("product-catalog-IM-PU");
+		entityManager = entityManagerFactory.createEntityManager();
 		jpaCategoryRepositoryImpl = new JpaCategoryRepositoryImpl(entityManager);
-		query = mock(TypedQuery.class);
-
+		transaction = entityManager.getTransaction();
 	}
 
 	@Test
 	public void test_createEntityInDatabase() {
 		Category category = new Category("name");
-		category.setId(12L);
 
+		transaction.begin();
 		Long result = jpaCategoryRepositoryImpl.create(category);
+		transaction.commit();
 
-		verify(entityManager, times(1)).persist(category);
-		assertThat(result).isEqualTo(12L);
+		assertThat(result).isNotNull();
+		assertThat(category.getId()).isEqualTo(result);
+
+		Category found = entityManager.find(Category.class, result);
+		assertThat(found).isNotNull();
+		assertThat(found.getName()).isEqualTo("name");
 	}
 
 	@Test
 	public void test_findByExistingId_shouldReturnEntity() {
-		Long categoryId = 1L;
-		Category expectedCategory = new Category("electronics");
-		expectedCategory.setId(categoryId);
+		Category expectedCategory = new Category("name");
 
-		when(entityManager.find(Category.class, categoryId)).thenReturn(expectedCategory);
+		transaction.begin();
+		entityManager.persist(expectedCategory);
+		transaction.commit();
+
+		Long categoryId = expectedCategory.getId();
 		Category result = jpaCategoryRepositoryImpl.findById(categoryId);
 
-		assertThat(result).isEqualTo(expectedCategory);
-		assertThat(result.getName()).isEqualTo("electronics");
+		assertThat(result).isNotNull();
+		assertThat(result.getName()).isEqualTo("name");
 		assertThat(result.getId()).isEqualTo(categoryId);
-		verify(entityManager).find(Category.class, categoryId);
 	}
 
 	@Test
 	public void test_findByNonExistingId_shouldReturnNull() {
-		Long nonExistentId = 999L;
-
-		when(entityManager.find(Category.class, nonExistentId)).thenReturn(null);
 		Category result = jpaCategoryRepositoryImpl.findById(nonExistentId);
 
 		assertThat(result).isNull();
-		verify(entityManager).find(Category.class, nonExistentId);
 	}
 
 	@Test
 	public void test_deleteById_shouldReturnDeletedMessage() {
-		Long existentId = 1L;
+		transaction.begin();
 		Category expectedCategory = new Category("electronics");
+		entityManager.persist(expectedCategory);
+		transaction.commit();
 
-		when(entityManager.find(Category.class, existentId)).thenReturn(expectedCategory);
+		transaction.begin();
 		String result = jpaCategoryRepositoryImpl.delete(expectedCategory);
+		transaction.commit();
 
 		assertThat(result).isEqualTo("Deleted");
-		verify(entityManager).remove(expectedCategory);
+		Category found = entityManager.find(Category.class, expectedCategory.getId());
+		assertThat(found).isNull();
 	}
 
 	@Test
 	public void test_updateCategory_shouldReturnUpdatedCategory() {
-		Category updatedCategory = new Category("technology");
+		Category existingCategory = new Category("old-name");
+		transaction.begin();
+		entityManager.persist(existingCategory);
+		transaction.commit();
 
-		when(entityManager.merge(updatedCategory)).thenReturn(updatedCategory);
+		existingCategory.setName("new name");
 
-		Category result = jpaCategoryRepositoryImpl.update(updatedCategory);
+		transaction.begin();
+		Category result = jpaCategoryRepositoryImpl.update(existingCategory);
+		transaction.commit();
 
-		assertThat(result).isEqualTo(updatedCategory);
-		verify(entityManager, times(1)).merge(updatedCategory);
+		assertThat(result).isNotNull();
+		assertThat(result.getName()).isEqualTo("new name");
+
+		Category found = entityManager.find(Category.class, result.getId());
+		assertThat(found).isNotNull();
+		assertThat(found.getName()).isEqualTo("new name");
 	}
 
 	@Test
 	public void test_findByName_shouldReturnFoundCategory() {
 		String categoryName = "electronics";
-		Category expectedCategory = new Category("electronics");
+		Category category = new Category(categoryName);
 
-		when(entityManager.createQuery("SELECT c FROM Category c WHERE c.name = :name", Category.class))
-				.thenReturn(query);
-		when(query.setParameter("name", categoryName)).thenReturn(query);
-		when(query.getSingleResult()).thenReturn(expectedCategory);
+		transaction.begin();
+		entityManager.persist(category);
+		transaction.commit();
 
 		Category result = jpaCategoryRepositoryImpl.findByName(categoryName);
 
-		assertThat(result).isEqualTo(expectedCategory);
+		assertThat(result).isNotNull();
 		assertThat(result.getName()).isEqualTo(categoryName);
-
-		verify(entityManager).createQuery("SELECT c FROM Category c WHERE c.name = :name", Category.class);
-		verify(query).setParameter("name", categoryName);
-		verify(query).getSingleResult();
+		assertThat(result.getId()).isEqualTo(category.getId());
 	}
 
 	@Test
 	public void test_findByNonExistentName_shouldReturnNull() {
 		String nonExistentCategoryName = "does not exist";
 
-		when(entityManager.createQuery("SELECT c FROM Category c WHERE c.name = :name", Category.class))
-				.thenReturn(query);
-		when(query.setParameter("name", nonExistentCategoryName)).thenReturn(query);
-		when(query.getSingleResult()).thenThrow(NoResultException.class);
-
 		Category result = jpaCategoryRepositoryImpl.findByName(nonExistentCategoryName);
 
-		assertThat(result).isEqualTo(null);
+		assertThat(result).isNull();
 	}
 
 }

@@ -3,6 +3,7 @@ package io.github.dariopipa.tdd.catalog.service;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.AdditionalAnswers.answer;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
@@ -25,12 +26,15 @@ import io.github.dariopipa.tdd.catalog.entities.Product;
 import io.github.dariopipa.tdd.catalog.exceptions.EntityNotFoundException;
 import io.github.dariopipa.tdd.catalog.exceptions.ProductNameAlreadyExistsExcpetion;
 import io.github.dariopipa.tdd.catalog.repository.ProductRepository;
+import io.github.dariopipa.tdd.catalog.transactionManger.TransactionCode;
+import io.github.dariopipa.tdd.catalog.transactionManger.TransactionManager;
 
 public class ProductServiceTest {
 
 	private ProductService productService;
 	private ProductRepository productRepository;
 	private CategoryService categoryService;
+	private TransactionManager transactionManager;
 
 	private BigDecimal productPrice = new BigDecimal(111.11);
 	private BigDecimal negativeProductPrice = new BigDecimal(-111111);
@@ -47,7 +51,11 @@ public class ProductServiceTest {
 	public void setup() {
 		this.productRepository = mock(ProductRepository.class);
 		this.categoryService = mock(CategoryService.class);
-		this.productService = new ProductService(productRepository, categoryService);
+		this.transactionManager = mock(TransactionManager.class);
+
+		when(transactionManager.doInTransaction(any())).thenAnswer(answer((TransactionCode<?> code) -> code.execute()));
+
+		this.productService = new ProductService(productRepository, categoryService, transactionManager);
 	}
 
 	@Test
@@ -63,6 +71,7 @@ public class ProductServiceTest {
 		assertThat(createdProduct).isEqualTo(1L);
 		verify(categoryService).findById(existingId);
 		verify(productRepository).create(any(Product.class));
+		verify(transactionManager).doInTransaction(any());
 	}
 
 	@Test
@@ -71,6 +80,7 @@ public class ProductServiceTest {
 				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name must be provided");
 
 		verify(productRepository, never()).create(any(Product.class));
+		verify(transactionManager).doInTransaction(any());
 	}
 
 	@Test
@@ -105,7 +115,9 @@ public class ProductServiceTest {
 		Long createdProduct = productService.create("Product Name", zeroPrice, existingId);
 
 		assertThat(createdProduct).isEqualTo(1L);
+		verify(transactionManager).doInTransaction(any());
 		verify(productRepository).create(any(Product.class));
+
 	}
 
 	@Test
@@ -119,6 +131,7 @@ public class ProductServiceTest {
 				.isInstanceOf(ProductNameAlreadyExistsExcpetion.class);
 
 		verify(productRepository).findByName(normalizedName);
+		verify(transactionManager).doInTransaction(any());
 		verify(productRepository, never()).create(any(Product.class));
 	}
 
@@ -132,6 +145,7 @@ public class ProductServiceTest {
 				.hasMessageContaining("category with id:" + nonExistingId + "not found");
 
 		verify(categoryService).findById(nonExistingId);
+		verify(transactionManager).doInTransaction(any());
 		verify(productRepository, never()).create(any(Product.class));
 
 	}
@@ -144,6 +158,7 @@ public class ProductServiceTest {
 				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("id must be positive");
 
 		verify(categoryService).findById(negativeId);
+		verify(transactionManager).doInTransaction(any());
 		verify(productRepository, never()).create(any(Product.class));
 	}
 
@@ -155,6 +170,7 @@ public class ProductServiceTest {
 		Product response = productService.findById(existingId);
 
 		assertThat(response).isEqualTo(existingProduct);
+		verify(transactionManager).doInTransaction(any());
 		verify(productRepository).findById(existingId);
 	}
 
@@ -175,6 +191,7 @@ public class ProductServiceTest {
 		assertThatThrownBy(() -> productService.findById(null)).isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("id must be provided");
 
+		verify(transactionManager, never()).doInTransaction(any());
 		verify(productRepository, never()).findById(null);
 	}
 
@@ -195,7 +212,9 @@ public class ProductServiceTest {
 		assertThatThrownBy(() -> productService.findById(0L)).isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("id must be positive");
 
+		verify(transactionManager, never()).doInTransaction(any());
 		verify(productRepository, never()).findById(0L);
+
 	}
 
 	@Test
@@ -206,6 +225,7 @@ public class ProductServiceTest {
 		List<Product> result = productService.findAll();
 
 		assertThat(result).hasSize(2);
+		verify(transactionManager).doInTransaction(any());
 		verify(productRepository).findAll();
 	}
 
@@ -218,6 +238,7 @@ public class ProductServiceTest {
 		assertThat(result).isEqualTo(new ArrayList<Product>());
 		assertThat(result).isEmpty();
 
+		verify(transactionManager).doInTransaction(any());
 		verify(productRepository).findAll();
 	}
 
@@ -239,6 +260,7 @@ public class ProductServiceTest {
 		assertThat(existingProduct.getPrice()).isEqualTo(productPrice);
 		assertThat(existingProduct.getCategory()).isEqualTo(newCategory);
 
+		verify(transactionManager, times(2)).doInTransaction(any());
 		verify(productRepository).update(any(Product.class));
 	}
 
@@ -255,6 +277,8 @@ public class ProductServiceTest {
 
 		assertThat(updatedProduct.getName()).isEqualTo(normalized);
 		assertThat(updatedProduct.getPrice()).isEqualTo(zeroPrice);
+
+		verify(transactionManager, times(2)).doInTransaction(any());
 		verify(productRepository).update(any(Product.class));
 	}
 
@@ -266,6 +290,7 @@ public class ProductServiceTest {
 				.isInstanceOf(EntityNotFoundException.class)
 				.hasMessage("product with id: " + nonExistingId + " not found");
 
+		verify(transactionManager, times(2)).doInTransaction(any());
 		verify(productRepository).findById(nonExistingId);
 	}
 
@@ -286,6 +311,7 @@ public class ProductServiceTest {
 		assertThatThrownBy(() -> productService.update(negativeId, newName, productPrice, existingId))
 				.isInstanceOf(IllegalArgumentException.class).hasMessage("id must be positive");
 
+		verify(transactionManager).doInTransaction(any());
 		verify(productRepository, never()).findById(negativeId);
 	}
 
@@ -301,6 +327,7 @@ public class ProductServiceTest {
 		assertThatThrownBy(() -> productService.update(existingId, newName, productPrice, existingId))
 				.isInstanceOf(ProductNameAlreadyExistsExcpetion.class);
 
+		verify(transactionManager, times(2)).doInTransaction(any());
 		verify(productRepository).findById(existingId);
 		verify(categoryService).findById(existingId);
 		verify(productRepository).findByName(normalizedName);
@@ -314,6 +341,7 @@ public class ProductServiceTest {
 		assertThatThrownBy(() -> productService.update(existingId, null, productPrice, existingId))
 				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name must be provided");
 
+		verify(transactionManager, times(2)).doInTransaction(any());
 		verify(productRepository).findById(existingId);
 		verify(productRepository, never()).findByName(newName);
 		verify(productRepository, never()).update(any(Product.class));
@@ -327,6 +355,7 @@ public class ProductServiceTest {
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("name must contain valid characters");
 
+		verify(transactionManager, times(2)).doInTransaction(any());
 		verify(productRepository).findById(existingId);
 		verify(productRepository, never()).findByName(newName);
 		verify(productRepository, never()).update(any(Product.class));
@@ -343,7 +372,8 @@ public class ProductServiceTest {
 
 		assertThat(result.getName()).isEqualTo(normalizedName);
 
-		InOrder inOrder = Mockito.inOrder(productRepository, categoryService);
+		InOrder inOrder = Mockito.inOrder(productRepository, categoryService, transactionManager);
+		inOrder.verify(transactionManager, times(2)).doInTransaction(any());
 		inOrder.verify(productRepository).findById(existingId);
 		inOrder.verify(productRepository).findByName(normalizedName);
 		inOrder.verify(productRepository).update(any(Product.class));
@@ -370,6 +400,7 @@ public class ProductServiceTest {
 		assertThatThrownBy(() -> productService.update(existingId, newName, productPrice, negativeId))
 				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("id must be positive");
 
+		verify(transactionManager, times(2)).doInTransaction(any());
 		verify(categoryService).findById(negativeId);
 		verify(productRepository, never()).update(any(Product.class));
 	}
@@ -381,6 +412,7 @@ public class ProductServiceTest {
 		assertThatThrownBy(() -> productService.update(existingId, newName, null, negativeId))
 				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("price must be provided");
 
+		verify(transactionManager, times(2)).doInTransaction(any());
 		verify(productRepository, never()).update(any(Product.class));
 	}
 
@@ -391,6 +423,7 @@ public class ProductServiceTest {
 		assertThatThrownBy(() -> productService.update(existingId, newName, negativeProductPrice, negativeId))
 				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("price must be positive");
 
+		verify(transactionManager, times(2)).doInTransaction(any());
 		verify(productRepository, never()).update(any(Product.class));
 	}
 
@@ -403,6 +436,7 @@ public class ProductServiceTest {
 
 		productService.delete(existingId);
 
+		verify(transactionManager, times(2)).doInTransaction(any());
 		verify(productRepository, times(1)).delete(existingProduct);
 	}
 
@@ -413,6 +447,7 @@ public class ProductServiceTest {
 		assertThatThrownBy(() -> productService.delete(nonExistingId)).isInstanceOf(EntityNotFoundException.class)
 				.hasMessageContaining("product with id: " + nonExistingId + " not found");
 
+		verify(transactionManager, times(2)).doInTransaction(any());
 		verify(productRepository, never()).delete(null);
 	}
 
