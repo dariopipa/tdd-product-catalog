@@ -1,5 +1,7 @@
 package io.github.dariopipa.tdd.catalog.repository;
 
+import java.util.List;
+
 import io.github.dariopipa.tdd.catalog.entities.Category;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
@@ -49,6 +51,11 @@ public class JpaCategoryRepositoryImpl implements CategoryRepository {
 	public Category update(Category category) {
 
 		return entityManager.merge(category);
+	}
+
+	@Override
+	public List<Category> findAll() {
+		return entityManager.createQuery("SELECT c FROM Category c", Category.class).getResultList();
 	}
 
 }

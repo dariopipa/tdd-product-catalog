@@ -2,6 +2,8 @@ package io.github.dariopipa.tdd.catalog.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -120,12 +122,19 @@ public class JpaCategoryRepositoryImplTest {
 	}
 
 	@Test
-	public void test_findByNonExistentName_shouldReturnNull() {
-		String nonExistentCategoryName = "does not exist";
+	public void test_findAll_shouldReturnListOfProducts() {
+		Category category1 = new Category("category");
+		Category category2 = new Category("category2");
 
-		Category result = jpaCategoryRepositoryImpl.findByName(nonExistentCategoryName);
+		transaction.begin();
+		entityManager.persist(category1);
+		entityManager.persist(category2);
+		transaction.commit();
 
-		assertThat(result).isNull();
+		List<Category> result = jpaCategoryRepositoryImpl.findAll();
+
+		assertThat(result).hasSize(2);
+		assertThat(result).contains(category1, category2);
 	}
 
 }

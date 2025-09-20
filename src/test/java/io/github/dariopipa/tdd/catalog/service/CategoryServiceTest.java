@@ -1,5 +1,6 @@
 package io.github.dariopipa.tdd.catalog.service;
 
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.AdditionalAnswers.answer;
@@ -10,6 +11,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -256,5 +260,29 @@ public class CategoryServiceTest {
 		verify(categoryRepository).findById(entityId);
 		verify(categoryRepository, never()).findByName(normalizedName);
 		verify(categoryRepository, never()).update(any(Category.class));
+	}
+
+	@Test
+	public void test_findAllWithElements_returnListOfProducts() {
+		when(categoryRepository.findAll()).thenReturn(asList(new Category("category 1"), new Category("Category 2")));
+
+		List<Category> result = categoryService.findAll();
+
+		assertThat(result).hasSize(2);
+		verify(transactionManager).doInTransaction(any());
+		verify(categoryRepository).findAll();
+	}
+
+	@Test
+	public void test_findAllWithNoElements_returnEmptyListOfProducts() {
+		when(categoryRepository.findAll()).thenReturn(new ArrayList<Category>());
+
+		List<Category> result = categoryService.findAll();
+
+		assertThat(result).isEqualTo(new ArrayList<Category>());
+		assertThat(result).isEmpty();
+
+		verify(transactionManager).doInTransaction(any());
+		verify(categoryRepository).findAll();
 	}
 }

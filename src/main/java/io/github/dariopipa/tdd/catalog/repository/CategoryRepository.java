@@ -1,5 +1,7 @@
 package io.github.dariopipa.tdd.catalog.repository;
 
+import java.util.List;
+
 import io.github.dariopipa.tdd.catalog.entities.Category;
 
 public interface CategoryRepository {
@@ -13,4 +15,6 @@ public interface CategoryRepository {
 	Category findByName(String name);
 
 	Category update(Category category);
+
+	List<Category> findAll();
 }
