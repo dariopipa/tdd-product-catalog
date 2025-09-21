@@ -54,7 +54,7 @@ public class CategoryController {
 
 	public void findAll() {
 		List<Category> categories = categoryService.findAll();
-		categoryView.findAll(categories);
+		categoryView.findAllCategories(categories);
 	}
 
 }

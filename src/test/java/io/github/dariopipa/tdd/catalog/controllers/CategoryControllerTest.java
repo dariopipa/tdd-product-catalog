@@ -180,7 +180,7 @@ public class CategoryControllerTest {
 		categoryController.findAll();
 
 		verify(categoryService).findAll();
-		verify(categoryView).findAll(categories);
+		verify(categoryView).findAllCategories(categories);
 		verifyNoMoreInteractions(categoryService, categoryView);
 	}
 
@@ -193,7 +193,7 @@ public class CategoryControllerTest {
 		categoryController.findAll();
 
 		verify(categoryService).findAll();
-		verify(categoryView).findAll(emptyList);
+		verify(categoryView).findAllCategories(emptyList);
 		verifyNoMoreInteractions(categoryService, categoryView);
 	}
 
