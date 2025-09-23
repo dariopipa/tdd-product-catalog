@@ -43,7 +43,7 @@ public class ProductController {
 
 	public void findAll() {
 		List<Product> products = productService.findAll();
-		productView.findAll(products);
+		productView.findAllProducts(products);
 	}
 
 	public void update(Long id, String newName, BigDecimal valueOf, Long categoryId) {

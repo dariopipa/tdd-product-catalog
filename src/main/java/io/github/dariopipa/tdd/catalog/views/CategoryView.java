@@ -14,5 +14,5 @@ public interface CategoryView {
 
 	void updateCategory(Category category);
 
-	void findAll(List<Category> categories);
+	void findAllCategories(List<Category> categories);
 }

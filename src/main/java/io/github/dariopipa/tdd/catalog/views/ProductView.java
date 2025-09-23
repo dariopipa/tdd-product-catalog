@@ -13,5 +13,5 @@ public interface ProductView {
 
 	void updateProduct(Product product);
 
-	void findAll(List<Product> products);
+	void findAllProducts(List<Product> products);
 }

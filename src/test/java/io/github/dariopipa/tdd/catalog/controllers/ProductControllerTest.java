@@ -181,7 +181,7 @@ public class ProductControllerTest {
 		productController.findAll();
 
 		verify(productService).findAll();
-		verify(productView).findAll(products);
+		verify(productView).findAllProducts(products);
 		verifyNoMoreInteractions(categoryService, productView);
 	}
 
@@ -194,7 +194,7 @@ public class ProductControllerTest {
 		productController.findAll();
 
 		verify(productService).findAll();
-		verify(productView).findAll(emptyList);
+		verify(productView).findAllProducts(emptyList);
 		verifyNoMoreInteractions(categoryService, productView);
 	}
 
