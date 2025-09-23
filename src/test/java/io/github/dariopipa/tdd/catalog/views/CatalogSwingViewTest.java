@@ -53,22 +53,17 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 
 		frameFixture = new FrameFixture(robot(), catalogSwingView);
 		frameFixture.show();
-		frameFixture.resizeWidthTo(500);
-		frameFixture.resizeHeightTo(500);
 	}
 
 	@Test
+	@GUITest
 	public void testGeneralUIComponents() {
 		frameFixture.panel("categoryPanel").requireVisible();
 		frameFixture.panel("productPanel").requireVisible();
 		frameFixture.panel("titlePanel").requireVisible();
 		frameFixture.label("titleLabel").requireVisible();
 		frameFixture.label("errorLabel").requireVisible();
-	}
 
-	@Test
-	@GUITest
-	public void testCategoryProductComponentsNeeded() {
 		frameFixture.label("categoryName").requireVisible();
 		frameFixture.label("newNameLabel").requireVisible();
 
