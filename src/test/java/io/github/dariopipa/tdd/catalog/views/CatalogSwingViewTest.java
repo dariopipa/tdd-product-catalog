@@ -1,9 +1,12 @@
 package io.github.dariopipa.tdd.catalog.views;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.List;
 
 import javax.swing.JComboBox;
 import javax.swing.table.DefaultTableModel;
@@ -12,11 +15,16 @@ import org.assertj.swing.annotation.GUITest;
 import org.assertj.swing.data.TableCell;
 import org.assertj.swing.edt.GuiActionRunner;
 import org.assertj.swing.fixture.FrameFixture;
+import org.assertj.swing.fixture.JComboBoxFixture;
 import org.assertj.swing.junit.runner.GUITestRunner;
 import org.assertj.swing.junit.testcase.AssertJSwingJUnitTestCase;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
+import io.github.dariopipa.tdd.catalog.controllers.CategoryController;
+import io.github.dariopipa.tdd.catalog.controllers.ProductController;
 import io.github.dariopipa.tdd.catalog.entities.Category;
 import io.github.dariopipa.tdd.catalog.entities.Product;
 
@@ -26,10 +34,20 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	private FrameFixture frameFixture;
 	private CatalogSwingView catalogSwingView;
 
+	@Mock
+	private CategoryController categoryController;
+
+	@Mock
+	private ProductController productController;
+
 	@Override
 	protected void onSetUp() {
+		MockitoAnnotations.openMocks(this);
+
 		GuiActionRunner.execute(() -> {
 			catalogSwingView = new CatalogSwingView();
+			catalogSwingView.setCategoryController(categoryController);
+			catalogSwingView.setProductController(productController);
 			return catalogSwingView;
 		});
 
@@ -456,5 +474,140 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 
 		frameFixture.table("productTable").requireRowCount(0);
 		frameFixture.label("errorLabel").requireText("");
+	}
+
+	// Testing that controllers are invoked when called.
+
+	@Test
+	public void test_categoryAddButton_shouldDelegateToCategoryControllerCreate() {
+		frameFixture.textBox("newName").enterText("tech");
+		frameFixture.button("addCategoryButton").click();
+
+		verify(categoryController, times(1)).create("tech");
+	}
+
+	@Test
+	public void test_categoryDeleteButton_shouldDelegateToCategoryControllerDelete() {
+		GuiActionRunner.execute(() -> {
+			DefaultTableModel model = (DefaultTableModel) frameFixture.table("categoryTable").target().getModel();
+			model.addRow(new Object[] { 1L, "category 1" });
+			model.addRow(new Object[] { 2L, "category 2" });
+		});
+
+		frameFixture.table("categoryTable").selectCell(TableCell.row(0).column(0));
+		frameFixture.button("deleteCategoryButton").click();
+
+		verify(categoryController, times(1)).delete(1L);
+	}
+
+	@Test
+	public void test_categoryUpdateButton_shouldDelegateToCategoryControllerUpdate() {
+		GuiActionRunner.execute(() -> {
+			DefaultTableModel model = (DefaultTableModel) frameFixture.table("categoryTable").target().getModel();
+			model.addRow(new Object[] { 1L, "category 1" });
+			model.addRow(new Object[] { 2L, "category 2" });
+		});
+
+		frameFixture.table("categoryTable").selectCell(TableCell.row(0).column(0));
+
+		frameFixture.textBox("newName").enterText("new name");
+		frameFixture.button("updateCategoryButton").click();
+
+		verify(categoryController, times(1)).update(1L, "new name");
+	}
+
+	@Test
+	public void test_productAddButton_shouldDelegateToProductControllerCreate() {
+		Category category = new Category("tech");
+		category.setId(1L);
+
+		GuiActionRunner.execute(() -> {
+			@SuppressWarnings("unchecked")
+			JComboBox<Category> comboBox = frameFixture.comboBox("productCategorySelectBox").target();
+			comboBox.addItem(category);
+			return null;
+		});
+
+		frameFixture.textBox("productNewName").enterText("tech");
+		frameFixture.textBox("productNewPrice").enterText(BigDecimal.valueOf(111).toString());
+		frameFixture.comboBox("productCategorySelectBox").selectItem(0);
+
+		frameFixture.button("addProductButton").click();
+
+		verify(productController, times(1)).create("tech", BigDecimal.valueOf(111), 1L);
+	}
+
+	@Test
+	public void test_productDeleteButton_shouldDelegateToProductControllerDelete() {
+		Category category = new Category("tech");
+
+		GuiActionRunner.execute(() -> {
+			DefaultTableModel model = (DefaultTableModel) frameFixture.table("productTable").target().getModel();
+			model.addRow(new Object[] { 1L, "product1", 99, category });
+			model.addRow(new Object[] { 2L, "product2", 99, category });
+		});
+
+		frameFixture.table("productTable").selectRows(0);
+		frameFixture.button("deleteProductButton").click();
+
+		verify(productController, times(1)).delete(1L);
+	}
+
+	@Test
+	public void test_productUpdateButton_shouldDelegateToProductControllerUpdate() {
+		Category category = new Category("tech");
+		category.setId(1L);
+		Category newCategory = new Category("books");
+		newCategory.setId(2L);
+
+		GuiActionRunner.execute(() -> {
+			DefaultTableModel model = (DefaultTableModel) frameFixture.table("productTable").target().getModel();
+			model.addRow(new Object[] { 1L, "product1", 99, category });
+			model.addRow(new Object[] { 2L, "product2", 99, category });
+		});
+
+		GuiActionRunner.execute(() -> {
+			@SuppressWarnings("unchecked")
+			JComboBox<Category> comboBox = frameFixture.comboBox("productCategorySelectBox").target();
+			comboBox.addItem(category);
+			comboBox.addItem(newCategory);
+			return null;
+		});
+
+		frameFixture.table("productTable").selectRows(0);
+		frameFixture.textBox("productNewName").enterText("iphone");
+		frameFixture.textBox("productNewPrice").enterText(BigDecimal.valueOf(111).toString());
+		frameFixture.comboBox("productCategorySelectBox").selectItem(1);
+
+		frameFixture.button("updateProductButton").click();
+
+		verify(productController, times(1)).update(1L, "iphone", BigDecimal.valueOf(111), 2L);
+	}
+
+	@Test
+	public void test_findAllCategories_shoudlPopulateAlsoTheComboBox() {
+		Category tech = new Category("tech");
+		tech.setId(1L);
+		Category books = new Category("books");
+		books.setId(2L);
+		List<Category> categories = Arrays.asList(tech, books);
+
+		GuiActionRunner.execute(() -> {
+			catalogSwingView.findAllCategories(categories);
+			return null;
+		});
+
+		JComboBoxFixture comboBoxFixture = frameFixture.comboBox("productCategorySelectBox");
+
+		assertThat(comboBoxFixture.target().getItemCount()).isEqualTo(2);
+		assertThat(comboBoxFixture.contents()).containsExactly("tech", "books");
+
+		Category firstItem = (Category) comboBoxFixture.target().getItemAt(0);
+		Category secondItem = (Category) comboBoxFixture.target().getItemAt(1);
+
+		assertThat(firstItem.getName()).isEqualTo("tech");
+		assertThat(firstItem.getId()).isEqualTo(1L);
+		assertThat(secondItem.getName()).isEqualTo("books");
+		assertThat(secondItem.getId()).isEqualTo(2L);
 	}
 }

@@ -8,8 +8,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -25,6 +23,8 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
 
+import io.github.dariopipa.tdd.catalog.controllers.CategoryController;
+import io.github.dariopipa.tdd.catalog.controllers.ProductController;
 import io.github.dariopipa.tdd.catalog.entities.Category;
 import io.github.dariopipa.tdd.catalog.entities.Product;
 
@@ -38,6 +38,8 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 	private JTextField productNewPrice;
 	private JComboBox<Category> productCategorySelectBox;
 	private JLabel errorLabel;
+	private CategoryController categoryController;
+	private ProductController productController;
 
 	/**
 	 * Launch the application.
@@ -81,18 +83,41 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 		categoryPanel.add(categoryName);
 
 		JButton addCategoryButton = new JButton("Add New Category");
+		addCategoryButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				categoryController.create(newName.getText().trim());
+			}
+		});
 		addCategoryButton.setEnabled(false);
 		addCategoryButton.setName("addCategoryButton");
 		addCategoryButton.setBounds(52, 229, 123, 23);
 		categoryPanel.add(addCategoryButton);
 
 		JButton deleteCategoryButton = new JButton("Delete Selected");
+		deleteCategoryButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				int selectedRow = categoryTable.getSelectedRow();
+				if (selectedRow != -1) {
+					Long categoryId = (Long) categoryModel().getValueAt(selectedRow, 0);
+					categoryController.delete(categoryId);
+				}
+			}
+		});
 		deleteCategoryButton.setEnabled(false);
 		deleteCategoryButton.setName("deleteCategoryButton");
 		deleteCategoryButton.setBounds(52, 303, 123, 23);
 		categoryPanel.add(deleteCategoryButton);
 
 		JButton updateCategoryButton = new JButton("Update Selected");
+		updateCategoryButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				int selectedRow = categoryTable.getSelectedRow();
+				if (selectedRow != -1) {
+					Long categoryId = (Long) categoryModel().getValueAt(selectedRow, 0);
+					categoryController.update(categoryId, newName.getText().trim());
+				}
+			}
+		});
 		updateCategoryButton.setEnabled(false);
 		updateCategoryButton.setName("updateCategoryButton");
 		updateCategoryButton.setBounds(52, 263, 123, 23);
@@ -104,19 +129,15 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 
 		categoryTable = new JTable();
 		categoryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		categoryTable.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				int selectedRow = categoryTable.getSelectedRow();
-				boolean isRowSelected = selectedRow >= 0;
-				updateCategoryButton.setEnabled(isRowSelected);
-				deleteCategoryButton.setEnabled(isRowSelected);
-			}
+		categoryTable.getSelectionModel().addListSelectionListener(e -> {
+			boolean hasSelection = categoryTable.getSelectedRow() >= 0;
+			updateCategoryButton.setEnabled(hasSelection);
+			deleteCategoryButton.setEnabled(hasSelection);
 		});
 		categoryTable.setModel(new DefaultTableModel(new Object[][] {}, new String[] { "Id", "Name" }) {
-			Class[] columnTypes = new Class[] { Long.class, String.class };
+			Class<?>[] columnTypes = new Class<?>[] { Long.class, String.class };
 
-			public Class getColumnClass(int columnIndex) {
+			public Class<?> getColumnClass(int columnIndex) {
 				return columnTypes[columnIndex];
 			}
 		});
@@ -160,18 +181,43 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 		productPanel.add(lblProducts);
 
 		JButton addProductButton = new JButton("Add New Product");
+		addProductButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				productController.create(productNewName.getText().strip(), new BigDecimal(productNewPrice.getText()),
+						getSelectedIdFromCategoryTypes());
+			}
+		});
 		addProductButton.setEnabled(false);
 		addProductButton.setName("addProductButton");
 		addProductButton.setBounds(10, 275, 123, 23);
 		productPanel.add(addProductButton);
 
 		JButton deleteProductButton = new JButton("Delete Selected Product");
+		deleteProductButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				int selectedRow = productTable.getSelectedRow();
+				if (selectedRow != -1) {
+					Long categoryId = (Long) productModel().getValueAt(selectedRow, 0);
+					productController.delete(categoryId);
+				}
+			}
+		});
 		deleteProductButton.setEnabled(false);
 		deleteProductButton.setName("deleteProductButton");
 		deleteProductButton.setBounds(90, 303, 123, 23);
 		productPanel.add(deleteProductButton);
 
 		JButton updateProductButton = new JButton("Update Selected Product");
+		updateProductButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				int selectedRow = productTable.getSelectedRow();
+				if (selectedRow != -1) {
+					Long productId = (Long) productModel().getValueAt(selectedRow, 0);
+					productController.update(productId, productNewName.getText().strip(),
+							new BigDecimal(productNewPrice.getText()), getSelectedIdFromCategoryTypes());
+				}
+			}
+		});
 		updateProductButton.setEnabled(false);
 		updateProductButton.setName("updateProductButton");
 		updateProductButton.setBounds(159, 273, 123, 23);
@@ -185,20 +231,17 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 
 		productTable = new JTable();
 		productTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		productTable.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				int selectedRow = productTable.getSelectedRow();
-				boolean isRowSelected = selectedRow >= 0;
-				updateProductButton.setEnabled(isRowSelected);
-				deleteProductButton.setEnabled(isRowSelected);
-			}
+		productTable.getSelectionModel().addListSelectionListener(e -> {
+			int selectedRow = productTable.getSelectedRow();
+			boolean isRowSelected = selectedRow >= 0;
+			updateProductButton.setEnabled(isRowSelected);
+			deleteProductButton.setEnabled(isRowSelected);
 		});
 		productTable
 				.setModel(new DefaultTableModel(new Object[][] {}, new String[] { "Id", "Name", "Price", "Category" }) {
-					Class[] columnTypes = new Class[] { Integer.class, String.class, Long.class, Object.class };
+					Class<?>[] columnTypes = new Class[] { Integer.class, String.class, Long.class, Object.class };
 
-					public Class getColumnClass(int columnIndex) {
+					public Class<?> getColumnClass(int columnIndex) {
 						return columnTypes[columnIndex];
 					}
 
@@ -287,32 +330,6 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 		getContentPane().add(errorLabel);
 	}
 
-	private Boolean validatePrice(String priceString) {
-		try {
-			BigDecimal price = new BigDecimal(priceString);
-			boolean isValid = price.compareTo(BigDecimal.ZERO) >= 0;
-
-			if (isValid) {
-				errorLabel.setText("");
-			} else {
-				errorLabel.setText("Price must be an allowed number");
-			}
-
-			return isValid;
-		} catch (NumberFormatException e) {
-			errorLabel.setText("Price must be an allowed number");
-			return false;
-		}
-	}
-
-	private DefaultTableModel categoryModel() {
-		return (DefaultTableModel) categoryTable.getModel();
-	}
-
-	private DefaultTableModel productModel() {
-		return (DefaultTableModel) productTable.getModel();
-	}
-
 	@Override
 	public void addedProduct(Product product) {
 		productModel()
@@ -381,7 +398,56 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 	public void findAllCategories(List<Category> categories) {
 		categoryModel().setRowCount(0);
 		categories.forEach(category -> categoryModel().addRow(new Object[] { category.getId(), category.getName() }));
+
+		productCategorySelectBox.removeAllItems();
+		categories.forEach(category -> productCategorySelectBox.addItem(category));
 		showError("");
 	}
 
+	public void setCategoryController(CategoryController categoryController) {
+		this.categoryController = categoryController;
+		categoryController.findAll();
+
+	}
+
+	public void setProductController(ProductController productController) {
+		this.productController = productController;
+	}
+
+	// helper functions.
+
+	private Boolean validatePrice(String priceString) {
+		try {
+			BigDecimal price = new BigDecimal(priceString);
+			boolean isValid = price.compareTo(BigDecimal.ZERO) >= 0;
+
+			if (isValid) {
+				errorLabel.setText("");
+			} else {
+				errorLabel.setText("Price must be an allowed number");
+			}
+
+			return isValid;
+		} catch (NumberFormatException e) {
+			errorLabel.setText("Price must be an allowed number");
+			return false;
+		}
+	}
+
+	private Long getSelectedIdFromCategoryTypes() {
+		Category selected = (Category) productCategorySelectBox.getSelectedItem();
+		if (selected == null || selected.getId() == null) {
+			showError("Please select a category");
+			return null;
+		}
+		return selected.getId();
+	}
+
+	private DefaultTableModel categoryModel() {
+		return (DefaultTableModel) categoryTable.getModel();
+	}
+
+	private DefaultTableModel productModel() {
+		return (DefaultTableModel) productTable.getModel();
+	}
 }
