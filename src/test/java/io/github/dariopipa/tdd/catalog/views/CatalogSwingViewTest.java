@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.awt.Dimension;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
@@ -48,11 +49,13 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 			catalogSwingView = new CatalogSwingView();
 			catalogSwingView.setCategoryController(categoryController);
 			catalogSwingView.setProductController(productController);
+
 			return catalogSwingView;
 		});
 
 		frameFixture = new FrameFixture(robot(), catalogSwingView);
 		frameFixture.show();
+		frameFixture.resizeTo(new Dimension(600, 500));
 	}
 
 	@Test

@@ -22,7 +22,10 @@
 		<jakarta.persistence.version>3.1.0</jakarta.persistence.version>
 		<hibernate.core.version>6.4.8.Final</hibernate.core.version>
 		<postgresql.version>42.7.7</postgresql.version>
-		<h2.version> 2.2.224 </h2.version>
+		<h2.version>2.2.224</h2.version>
+		<build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
+		<maven-failsafe-plugin.version>3.5.3</maven-failsafe-plugin.version>
+		<testcontainers-postgresql.version>1.21.3</testcontainers-postgresql.version>
 	</properties>
 
 	<dependencies>
@@ -63,6 +66,12 @@
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
 			<version>${h2.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>${testcontainers-postgresql.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -115,5 +124,40 @@
 				</plugin>
 			</plugins>
 		</pluginManagement>
+
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>${build-helper-maven-plugin.version}</version>
+				<executions>
+					<execution>
+						<id>add-test-source</id>
+						<phase>generate-test-sources</phase>
+						<goals>
+							<goal>add-test-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>src/it/java</source>
+							</sources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>${maven-failsafe-plugin.version}</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
 	</build>
 </project>

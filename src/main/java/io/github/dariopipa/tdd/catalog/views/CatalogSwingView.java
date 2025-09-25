@@ -61,10 +61,11 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 	 * Create the frame.
 	 */
 	public CatalogSwingView() {
+		setSize(new Dimension(500, 500));
 		setFont(new Font("Arial", Font.BOLD, 12));
 		setTitle("Catalog");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(450, 450, 566, 450);
+//		setBounds(450, 450, 566, 450);
 		getContentPane().setLayout(null);
 
 		JPanel categoryPanel = new JPanel();
