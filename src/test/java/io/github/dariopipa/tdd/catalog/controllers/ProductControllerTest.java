@@ -2,7 +2,6 @@ package io.github.dariopipa.tdd.catalog.controllers;
 
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -15,6 +14,8 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import io.github.dariopipa.tdd.catalog.entities.Category;
 import io.github.dariopipa.tdd.catalog.entities.Product;
@@ -27,16 +28,20 @@ import io.github.dariopipa.tdd.catalog.views.ProductView;
 public class ProductControllerTest {
 
 	private ProductController productController;
+	@Mock
 	private ProductService productService;
+
+	@Mock
 	private ProductView productView;
+
+	@Mock
 	private CategoryService categoryService;
 
 	@Before
 	public void setup() {
-		productService = mock(ProductService.class);
-		productView = mock(ProductView.class);
+		MockitoAnnotations.openMocks(this);
+
 		productController = new ProductController(productService, productView);
-		categoryService = mock(CategoryService.class);
 	}
 
 	@Test

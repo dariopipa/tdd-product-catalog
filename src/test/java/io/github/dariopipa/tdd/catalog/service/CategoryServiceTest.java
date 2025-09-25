@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.AdditionalAnswers.answer;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,7 +17,9 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 
 import io.github.dariopipa.tdd.catalog.entities.Category;
 import io.github.dariopipa.tdd.catalog.exceptions.CategoryNameAlreadyExistsExcpetion;
@@ -30,7 +31,11 @@ import io.github.dariopipa.tdd.catalog.transactionManger.TransactionManager;
 public class CategoryServiceTest {
 
 	private CategoryService categoryService;
+
+	@Mock
 	private CategoryRepository categoryRepository;
+
+	@Mock
 	private TransactionManager transactionManager;
 
 	private final long entityId = 1L;
@@ -40,8 +45,7 @@ public class CategoryServiceTest {
 
 	@Before
 	public void setup() {
-		categoryRepository = mock(CategoryRepository.class);
-		transactionManager = mock(TransactionManager.class);
+		MockitoAnnotations.openMocks(this);
 
 		when(transactionManager.doInTransaction(any())).thenAnswer(answer((TransactionCode<?> code) -> code.execute()));
 

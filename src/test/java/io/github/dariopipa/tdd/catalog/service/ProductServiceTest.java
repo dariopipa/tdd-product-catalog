@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.AdditionalAnswers.answer;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -19,7 +18,9 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 
 import io.github.dariopipa.tdd.catalog.entities.Category;
 import io.github.dariopipa.tdd.catalog.entities.Product;
@@ -32,8 +33,14 @@ import io.github.dariopipa.tdd.catalog.transactionManger.TransactionManager;
 public class ProductServiceTest {
 
 	private ProductService productService;
+
+	@Mock
 	private ProductRepository productRepository;
+
+	@Mock
 	private CategoryService categoryService;
+
+	@Mock
 	private TransactionManager transactionManager;
 
 	private BigDecimal productPrice = new BigDecimal(111.11);
@@ -49,9 +56,7 @@ public class ProductServiceTest {
 
 	@Before
 	public void setup() {
-		this.productRepository = mock(ProductRepository.class);
-		this.categoryService = mock(CategoryService.class);
-		this.transactionManager = mock(TransactionManager.class);
+		MockitoAnnotations.openMocks(this);
 
 		when(transactionManager.doInTransaction(any())).thenAnswer(answer((TransactionCode<?> code) -> code.execute()));
 
