@@ -48,7 +48,7 @@ public class CategoryService {
 		});
 	}
 
-	private Category findByIdInternal(Long id) {
+	Category findByIdInternal(Long id) {
 		if (id == null) {
 			throw new IllegalArgumentException("id must be provided");
 		}

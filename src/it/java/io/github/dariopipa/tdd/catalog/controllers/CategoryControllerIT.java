@@ -2,7 +2,6 @@ package io.github.dariopipa.tdd.catalog.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import java.util.HashMap;
@@ -65,17 +64,17 @@ public class CategoryControllerIT {
 		MockitoAnnotations.openMocks(this);
 
 		// this will make sure that the db is empty every time
-		em = emf.createEntityManager();
-		em.getTransaction().begin();
-		em.createQuery("DELETE FROM Category").executeUpdate();
-		em.getTransaction().commit();
-		em.close();
+		EntityManager tempEm = emf.createEntityManager();
+		tempEm.getTransaction().begin();
+		tempEm.createQuery("DELETE FROM Product").executeUpdate();
+		tempEm.createQuery("DELETE FROM Category").executeUpdate();
+		tempEm.getTransaction().commit();
+		tempEm.close();
 
 		em = emf.createEntityManager();
 		categoryRepository = new JpaCategoryRepositoryImpl(em);
 		transactionManager = new JPATransactionManager(em);
 		categoryService = new CategoryService(categoryRepository, transactionManager);
-		categoryView = mock(CategoryView.class);
 		categoryController = new CategoryController(categoryService, categoryView);
 	}
 

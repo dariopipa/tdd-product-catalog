@@ -26,7 +26,7 @@ public class ProductService {
 
 	public Long create(String name, BigDecimal price, Long categoryId) {
 		return transactionManager.doInTransaction(() -> {
-			Category category = categoryService.findById(categoryId);
+			Category category = categoryService.findByIdInternal(categoryId);
 			String normalized = validateAndNormalizeName(name);
 
 			findByName(normalized);
@@ -57,8 +57,8 @@ public class ProductService {
 
 	public Product update(Long id, String name, BigDecimal price, Long categoryId) {
 		return transactionManager.doInTransaction(() -> {
-			Product existingProduct = this.findById(id);
-			Category category = categoryService.findById(categoryId);
+			Product existingProduct = this.findByIdInternal(id);
+			Category category = categoryService.findByIdInternal(categoryId);
 
 			String normalized = validateAndNormalizeName(name);
 			findByName(normalized);
@@ -74,11 +74,19 @@ public class ProductService {
 
 	public void delete(Long id) {
 		transactionManager.doInTransaction(() -> {
-			Product existingProduct = findById(id);
+			Product existingProduct = findByIdInternal(id);
 
 			productRepository.delete(existingProduct);
 			return null;
 		});
+	}
+
+	Product findByIdInternal(Long id) {
+		validateId(id);
+		Product p = productRepository.findById(id);
+		if (p == null)
+			throw new EntityNotFoundException("product with id: " + id + " not found");
+		return p;
 	}
 
 	private void validateId(Long id) {
