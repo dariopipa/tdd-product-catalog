@@ -61,10 +61,10 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 	 * Create the frame.
 	 */
 	public CatalogSwingView() {
+		setSize(new Dimension(500, 500));
 		setFont(new Font("Arial", Font.BOLD, 12));
 		setTitle("Catalog");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(450, 450, 566, 450);
 		getContentPane().setLayout(null);
 
 		JPanel categoryPanel = new JPanel();
@@ -276,9 +276,7 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 		productNewName.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyReleased(KeyEvent e) {
-				addProductButton.setEnabled(
-						!productNewName.getText().trim().isEmpty() && validatePrice(productNewPrice.getText())
-								&& productCategorySelectBox.getSelectedItem() != null);
+				addProductButton.setEnabled(activateAddProductButtonIfValid());
 			}
 		});
 		productNewName.setName("productNewName");
@@ -290,8 +288,8 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 		productNewPrice.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyReleased(KeyEvent e) {
-				addProductButton.setEnabled(
-						!productNewName.getText().trim().isEmpty() && validatePrice(productNewPrice.getText())
+				addProductButton
+						.setEnabled(!productNewName.getText().isEmpty() && validatePrice(productNewPrice.getText())
 								&& productCategorySelectBox.getSelectedItem() != null);
 			}
 		});
@@ -303,10 +301,9 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 		productCategorySelectBox = new JComboBox<Category>();
 		productCategorySelectBox.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				addProductButton.setEnabled(
-						!productNewName.getText().trim().isEmpty() && validatePrice(productNewPrice.getText())
-								&& productCategorySelectBox.getSelectedItem() != null);
+				addProductButton.setEnabled(activateAddProductButtonIfValid());
 			}
+
 		});
 		productCategorySelectBox.setName("productCategorySelectBox");
 		productCategorySelectBox.setBounds(88, 240, 86, 22);
@@ -434,7 +431,7 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 		}
 	}
 
-	private Long getSelectedIdFromCategoryTypes() {
+	Long getSelectedIdFromCategoryTypes() {
 		Category selected = (Category) productCategorySelectBox.getSelectedItem();
 		if (selected == null || selected.getId() == null) {
 			showError("Please select a category");
@@ -449,5 +446,10 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 
 	private DefaultTableModel productModel() {
 		return (DefaultTableModel) productTable.getModel();
+	}
+
+	boolean activateAddProductButtonIfValid() {
+		return !productNewName.getText().isEmpty() && validatePrice(productNewPrice.getText())
+				&& productCategorySelectBox.getSelectedItem() != null;
 	}
 }

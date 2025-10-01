@@ -45,8 +45,11 @@ public class CategoryController {
 		try {
 			Category updatedCategory = categoryService.update(id, newName);
 			categoryView.updateCategory(updatedCategory);
+
 		} catch (IllegalArgumentException e) {
 			categoryView.showError("Invalid input: " + e.getMessage());
+		} catch (EntityNotFoundException e) {
+			categoryView.showError(e.getMessage());
 		} catch (CategoryNameAlreadyExistsExcpetion e) {
 			categoryView.showError("Category name already exists");
 		}

@@ -31,7 +31,7 @@ public class CategoryService {
 
 	public String delete(Long id) {
 		return transactionManager.doInTransaction(() -> {
-			Category existingCategory = findById(id);
+			Category existingCategory = findByIdInternal(id);
 			return categoryRepository.delete(existingCategory);
 		});
 	}
@@ -44,24 +44,28 @@ public class CategoryService {
 
 	public Category findById(Long id) {
 		return transactionManager.doInTransaction(() -> {
-			if (id == null) {
-				throw new IllegalArgumentException("id must be provided");
-			}
-			if (id <= 0) {
-				throw new IllegalArgumentException("id must be positive");
-			}
-
-			Category result = categoryRepository.findById(id);
-			if (result == null) {
-				throw new EntityNotFoundException("category with id:" + id + "not found");
-			}
-
-			return result;
+			return findByIdInternal(id);
 		});
 	}
 
+	Category findByIdInternal(Long id) {
+		if (id == null) {
+			throw new IllegalArgumentException("id must be provided");
+		}
+		if (id <= 0) {
+			throw new IllegalArgumentException("id must be positive");
+		}
+
+		Category result = categoryRepository.findById(id);
+		if (result == null) {
+			throw new EntityNotFoundException("category with id:" + id + " not found");
+		}
+
+		return result;
+	}
+
 	public Category update(Long entity_Id, String name) {
-		Category existingCategory = findById(entity_Id);
+		Category existingCategory = findByIdInternal(entity_Id);
 
 		return transactionManager.doInTransaction(() -> {
 			String normalizedName = validateAndNormalizeName(name);

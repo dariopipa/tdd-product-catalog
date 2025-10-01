@@ -73,4 +73,32 @@ public class JPATransactionManagerTest {
 		assertThat(entityManager.getTransaction().isActive()).isFalse();
 	}
 
+	@Test
+	public void test_doInTransaction_withException_shouldRollbackTransaction() {
+		Category existingCategory = new Category("existing category");
+		EntityManager setupEM = entityManagerFactory.createEntityManager();
+		setupEM.getTransaction().begin();
+		setupEM.persist(existingCategory);
+		setupEM.getTransaction().commit();
+		setupEM.close();
+
+		Long existingCategoryId = existingCategory.getId();
+
+		assertThatThrownBy(() -> {
+			jpaTransactionManager.doInTransaction(() -> {
+				Category categoryToUpdate = entityManager.find(Category.class, existingCategoryId);
+				categoryToUpdate.setName("new name");
+
+				throw new Exception("Persistence failed.");
+			});
+		}).isInstanceOf(Exception.class);
+
+		EntityManager verifyEntityManager = entityManagerFactory.createEntityManager();
+		Category foundCategory = verifyEntityManager.find(Category.class, existingCategoryId);
+
+		assertThat(foundCategory).isNotNull();
+		assertThat(foundCategory.getName()).isEqualTo("existing category");
+		assertThat(entityManager.getTransaction().isActive()).isFalse();
+	}
+
 }

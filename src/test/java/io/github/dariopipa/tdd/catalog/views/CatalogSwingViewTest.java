@@ -1,9 +1,11 @@
 package io.github.dariopipa.tdd.catalog.views;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.awt.Dimension;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
@@ -48,11 +50,13 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 			catalogSwingView = new CatalogSwingView();
 			catalogSwingView.setCategoryController(categoryController);
 			catalogSwingView.setProductController(productController);
+
 			return catalogSwingView;
 		});
 
 		frameFixture = new FrameFixture(robot(), catalogSwingView);
 		frameFixture.show();
+		frameFixture.resizeTo(new Dimension(600, 500));
 	}
 
 	@Test
@@ -104,18 +108,21 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_addButtonCategoryIsActive_whenTextHasBeenInputted() {
 		frameFixture.textBox("newName").enterText("category name");
 		frameFixture.button("addCategoryButton").requireEnabled();
 	}
 
 	@Test
+	@GUITest
 	public void test_addButtonCategoryIsDisabled_whenTextFieldIsEmpty() {
 		frameFixture.textBox("newName").enterText("     ");
 		frameFixture.button("addCategoryButton").requireDisabled();
 	}
 
 	@Test
+	@GUITest
 	public void test_updateAndDeleteButtonsCategoryAreActive_whenItemIsSelected() {
 		GuiActionRunner.execute(() -> {
 			DefaultTableModel model = (DefaultTableModel) frameFixture.table("categoryTable").target().getModel();
@@ -129,6 +136,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_addButtonProductIsActive_whenTextHasBeenInputted() {
 		GuiActionRunner.execute(() -> {
 			@SuppressWarnings("unchecked")
@@ -146,6 +154,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_addButtonProductIsDisabled_whenTextGetsDeleted() {
 		GuiActionRunner.execute(() -> {
 			@SuppressWarnings("unchecked")
@@ -165,6 +174,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_addButtonProductIsDisabled_whenPriceIsInvalid_shouldShowError() {
 		GuiActionRunner.execute(() -> {
 			@SuppressWarnings("unchecked")
@@ -181,6 +191,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_addButtonProductIsDisabled_whenPriceIsNegative__shouldShowError() {
 		GuiActionRunner.execute(() -> {
 			@SuppressWarnings("unchecked")
@@ -197,6 +208,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_addButtonProductIsEnabled_whenPriceIsZero() {
 		GuiActionRunner.execute(() -> {
 			@SuppressWarnings("unchecked")
@@ -212,6 +224,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_updateAndDeleteButtonsProductAreActive_whenItemIsSelected() {
 		Category category = new Category("tech");
 
@@ -228,6 +241,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_errorLabel_getsRemovedWhenValidPriceIsFixedAndEnteredCorrectly() {
 		GuiActionRunner.execute(() -> {
 			@SuppressWarnings("unchecked")
@@ -247,6 +261,63 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
+	public void test_addProductButton_isDisabled_whenCategoryNotSelected_evenIfNameAndPriceValid() {
+		GuiActionRunner.execute(() -> {
+			@SuppressWarnings("unchecked")
+			JComboBox<Category> comboBox = frameFixture.comboBox("productCategorySelectBox").target();
+			comboBox.removeAllItems();
+			comboBox.addItem(new Category("tech"));
+			comboBox.setSelectedItem(null);
+			return null;
+		});
+
+		frameFixture.textBox("productNewName").enterText("laptop");
+		frameFixture.textBox("productNewPrice").enterText("199.99");
+
+		frameFixture.button("addProductButton").requireDisabled();
+	}
+
+	@Test
+	@GUITest
+	public void test_addProductButtonIsDisabled_whenNameIsEmpty_evenIfPriceIsValid() {
+		Category category = new Category("tech");
+		category.setId(1L);
+		GuiActionRunner.execute(() -> {
+			@SuppressWarnings("unchecked")
+			JComboBox<Category> comboBox = frameFixture.comboBox("productCategorySelectBox").target();
+			comboBox.addItem(category);
+			return null;
+		});
+
+		frameFixture.textBox("productNewPrice").enterText("10");
+		frameFixture.comboBox("productCategorySelectBox").selectItem(0);
+		frameFixture.button("addProductButton").requireDisabled();
+	}
+
+	@Test
+	@GUITest
+	public void test_prouductAddButtonIsDisabled_whenCategoryBecomesNull() {
+		Category category = new Category("tech");
+		category.setId(1L);
+		GuiActionRunner.execute(() -> {
+			@SuppressWarnings("unchecked")
+			JComboBox<Category> comboBox = frameFixture.comboBox("productCategorySelectBox").target();
+			comboBox.addItem(category);
+			comboBox.setSelectedItem(category);
+			return null;
+		});
+
+		frameFixture.textBox("productNewName").enterText("tablet");
+		frameFixture.textBox("productNewPrice").enterText("100");
+		frameFixture.button("addProductButton").requireEnabled();
+
+		GuiActionRunner.execute(() -> frameFixture.comboBox("productCategorySelectBox").target().setSelectedItem(null));
+		frameFixture.button("addProductButton").requireDisabled();
+	}
+
+	@Test
+	@GUITest
 	public void test_addCategoryButton_addsCategoryToTable() {
 		frameFixture.textBox("newName").enterText("books");
 		frameFixture.button("addCategoryButton").click();
@@ -263,6 +334,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	// CategortView test.
 
 	@Test
+	@GUITest
 	public void test_addedCategory_addsCategoryToTable() {
 		Category category = new Category("Books");
 		category.setId(1l);
@@ -281,6 +353,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_deletedCategory_removesCategoryFromTable() {
 		Category category = new Category("Books");
 		category.setId(1L);
@@ -302,6 +375,23 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
+	public void test_deletedCategory_doesNothing_whenNoRowIsSelected() {
+		Category category = new Category("Books");
+		category.setId(1L);
+
+		GuiActionRunner.execute(() -> catalogSwingView.addedCategory(category));
+		frameFixture.table("categoryTable").requireRowCount(1);
+
+		GuiActionRunner.execute(() -> frameFixture.table("categoryTable").target().clearSelection());
+		frameFixture.table("categoryTable").requireNoSelection();
+
+		GuiActionRunner.execute(() -> catalogSwingView.deletedCategory(category));
+		frameFixture.table("categoryTable").requireRowCount(1);
+	}
+
+	@Test
+	@GUITest
 	public void test_showError_displaysErrorMessage() {
 		GuiActionRunner.execute(() -> catalogSwingView.showError("Test error message"));
 
@@ -309,6 +399,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_updateCategory_updatesCategoryAndResetsError() {
 		Category category = new Category("tech");
 		category.setId(1L);
@@ -328,6 +419,18 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
+	public void test_updateCategoryButton_doesNothingWhenNoRowIsSelected() {
+		frameFixture.textBox("newName").enterText("new name");
+
+		frameFixture.table("categoryTable").requireNoSelection();
+		frameFixture.button("updateCategoryButton").click();
+
+		verify(categoryController, times(0)).update(any(), any());
+	}
+
+	@Test
+	@GUITest
 	public void test_findAllCategories_returnsData() {
 		Category techCategory = new Category("tech");
 		Category carCategory = new Category("car");
@@ -344,6 +447,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_findAllCategories_withEmptyList_returnsEmptyTable() {
 		GuiActionRunner.execute(() -> catalogSwingView.findAllCategories(Arrays.asList()));
 
@@ -354,6 +458,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	// Product view impl methods
 
 	@Test
+	@GUITest
 	public void test_addedProduct_addsProductToTable() {
 		Category category = new Category("tech");
 		category.setId(1L);
@@ -378,6 +483,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_deletedProduct_removesProductFromTable() {
 		Category category = new Category("tech");
 		category.setId(1L);
@@ -401,6 +507,27 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
+	public void test_deletedProduct_doesNothing_whenNoRowIsSelected() {
+		Category category = new Category("tech");
+		category.setId(1L);
+
+		Product product = new Product("laptop", new BigDecimal("100"), category);
+		product.setId(1L);
+
+		GuiActionRunner.execute(() -> catalogSwingView.addedProduct(product));
+		frameFixture.table("productTable").requireRowCount(1);
+
+		GuiActionRunner.execute(() -> frameFixture.table("productTable").target().clearSelection());
+		frameFixture.table("productTable").requireNoSelection();
+
+		GuiActionRunner.execute(() -> catalogSwingView.deletedProduct(product));
+
+		frameFixture.table("productTable").requireRowCount(1);
+	}
+
+	@Test
+	@GUITest
 	public void test_updateProduct_updatesProductAndResetsError() {
 		Category category = new Category("tech");
 		category.setId(1L);
@@ -427,6 +554,29 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
+	public void test_updateProduct_doesNothing_whenNoRowIsSelected() {
+		Category category = new Category("tech");
+		category.setId(1L);
+		Product product = new Product("laptop", new BigDecimal("100"), category);
+		product.setId(1L);
+
+		GuiActionRunner.execute(() -> catalogSwingView.addedProduct(product));
+		frameFixture.table("productTable").requireRowCount(1);
+
+		GuiActionRunner.execute(() -> frameFixture.table("productTable").target().clearSelection());
+		frameFixture.table("productTable").requireNoSelection();
+
+		Product updated = new Product("hp2", new BigDecimal("130"), category);
+		updated.setId(1L);
+
+		GuiActionRunner.execute(() -> catalogSwingView.updateProduct(updated));
+
+		frameFixture.table("productTable").requireRowCount(1);
+	}
+
+	@Test
+	@GUITest
 	public void test_findAllProducts_returnsData() {
 		Category techCategory = new Category("tech");
 		techCategory.setId(1L);
@@ -464,6 +614,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_findAllProducts_withEmptyList_returnsEmptyTable() {
 		GuiActionRunner.execute(() -> catalogSwingView.findAllProducts(Arrays.asList()));
 
@@ -474,6 +625,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	// Testing that controllers are invoked when called.
 
 	@Test
+	@GUITest
 	public void test_categoryAddButton_shouldDelegateToCategoryControllerCreate() {
 		frameFixture.textBox("newName").enterText("tech");
 		frameFixture.button("addCategoryButton").click();
@@ -482,6 +634,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_categoryDeleteButton_shouldDelegateToCategoryControllerDelete() {
 		GuiActionRunner.execute(() -> {
 			DefaultTableModel model = (DefaultTableModel) frameFixture.table("categoryTable").target().getModel();
@@ -496,6 +649,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_categoryUpdateButton_shouldDelegateToCategoryControllerUpdate() {
 		GuiActionRunner.execute(() -> {
 			DefaultTableModel model = (DefaultTableModel) frameFixture.table("categoryTable").target().getModel();
@@ -512,6 +666,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_productAddButton_shouldDelegateToProductControllerCreate() {
 		Category category = new Category("tech");
 		category.setId(1L);
@@ -533,6 +688,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_productDeleteButton_shouldDelegateToProductControllerDelete() {
 		Category category = new Category("tech");
 
@@ -549,6 +705,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_productUpdateButton_shouldDelegateToProductControllerUpdate() {
 		Category category = new Category("tech");
 		category.setId(1L);
@@ -580,6 +737,7 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	}
 
 	@Test
+	@GUITest
 	public void test_findAllCategories_shoudlPopulateAlsoTheComboBox() {
 		Category tech = new Category("tech");
 		tech.setId(1L);
@@ -604,5 +762,140 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 		assertThat(firstItem.getId()).isEqualTo(1L);
 		assertThat(secondItem.getName()).isEqualTo("books");
 		assertThat(secondItem.getId()).isEqualTo(2L);
+	}
+
+	@Test
+	@GUITest
+	public void test_productUpdateButton_shouldNotCallProductController() {
+		GuiActionRunner.execute(() -> {
+			frameFixture.button("updateProductButton").target().setEnabled(true);
+			frameFixture.table("productTable").target().clearSelection();
+			return null;
+		});
+
+		frameFixture.button("updateProductButton").click();
+
+		verify(productController, times(0)).update(any(), any(), any(), any());
+	}
+
+	@Test
+	@GUITest
+	public void test_categoryDeleteButton_shouldNotCallCategoryController() {
+		GuiActionRunner.execute(() -> {
+			frameFixture.button("deleteCategoryButton").target().setEnabled(true);
+			frameFixture.table("categoryTable").target().clearSelection();
+			return null;
+		});
+
+		frameFixture.button("deleteCategoryButton").click();
+
+		verify(categoryController, times(0)).delete(any());
+	}
+
+	@Test
+	@GUITest
+	public void test_categoryUpdateButton_shouldNotCallCategoryController() {
+		GuiActionRunner.execute(() -> {
+			frameFixture.button("updateCategoryButton").target().setEnabled(true);
+			frameFixture.table("categoryTable").target().clearSelection();
+			return null;
+		});
+
+		frameFixture.button("updateCategoryButton").click();
+
+		verify(categoryController, times(0)).update(any(), any());
+	}
+
+	@Test
+	@GUITest
+	public void test_productDeleteButton_shouldNotCallProductController() {
+		GuiActionRunner.execute(() -> {
+			frameFixture.button("deleteProductButton").target().setEnabled(true);
+			frameFixture.table("productTable").target().clearSelection();
+			return null;
+		});
+
+		frameFixture.button("deleteProductButton").click();
+
+		verify(productController, times(0)).delete(any());
+	}
+
+	@Test
+	@GUITest
+	public void test_updateCategory_withNoSelection_shouldNotUpdateCategory() {
+		Category category = new Category("tech");
+		category.setId(1L);
+		GuiActionRunner.execute(() -> catalogSwingView.addedCategory(category));
+
+		frameFixture.table("categoryTable").requireRowCount(1);
+
+		GuiActionRunner.execute(() -> {
+			frameFixture.table("categoryTable").target().clearSelection();
+			return null;
+		});
+
+		frameFixture.table("categoryTable").requireNoSelection();
+
+		Category updatedCategory = new Category("books");
+		updatedCategory.setId(1L);
+		GuiActionRunner.execute(() -> catalogSwingView.updateCategory(updatedCategory));
+
+		String name = frameFixture.table("categoryTable").valueAt(TableCell.row(0).column(1));
+		assertThat(name).isEqualTo("tech");
+	}
+
+	@Test
+	@GUITest
+	public void test_getSelectedIdFromCategoryTypes_whenNoItemSelected_showsError() {
+		GuiActionRunner.execute(() -> {
+			@SuppressWarnings("unchecked")
+			JComboBox<Category> comboBox = frameFixture.comboBox("productCategorySelectBox").target();
+			comboBox.removeAllItems();
+			comboBox.setSelectedItem(null);
+			return null;
+		});
+
+		Long result = GuiActionRunner.execute(() -> catalogSwingView.getSelectedIdFromCategoryTypes());
+
+		assertThat(result).isNull();
+		frameFixture.label("errorLabel").requireText("Please select a category");
+	}
+
+	@Test
+	@GUITest
+	public void test_getSelectedIdFromCategoryTypes_whenCategoryHasNullId_showsError() {
+		Category categoryWithNullId = new Category("tech");
+
+		GuiActionRunner.execute(() -> {
+			@SuppressWarnings("unchecked")
+			JComboBox<Category> comboBox = frameFixture.comboBox("productCategorySelectBox").target();
+			comboBox.addItem(categoryWithNullId);
+			comboBox.setSelectedItem(categoryWithNullId);
+			return null;
+		});
+
+		Long result = GuiActionRunner.execute(() -> catalogSwingView.getSelectedIdFromCategoryTypes());
+
+		assertThat(result).isNull();
+		frameFixture.label("errorLabel").requireText("Please select a category");
+	}
+
+	@Test
+	@GUITest
+	public void test_getSelectedIdFromCategoryTypes_whenValidCategory_returnsId() {
+		Category category = new Category("tech");
+		category.setId(1L);
+
+		GuiActionRunner.execute(() -> {
+			@SuppressWarnings("unchecked")
+			JComboBox<Category> comboBox = frameFixture.comboBox("productCategorySelectBox").target();
+			comboBox.addItem(category);
+			comboBox.setSelectedItem(category);
+			return null;
+		});
+
+		Long result = GuiActionRunner.execute(() -> catalogSwingView.getSelectedIdFromCategoryTypes());
+
+		assertThat(result).isEqualTo(1L);
 	}
 }

@@ -1,7 +1,6 @@
 package io.github.dariopipa.tdd.catalog.controllers;
 
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -13,6 +12,8 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import io.github.dariopipa.tdd.catalog.entities.Category;
 import io.github.dariopipa.tdd.catalog.exceptions.CategoryNameAlreadyExistsExcpetion;
@@ -23,13 +24,15 @@ import io.github.dariopipa.tdd.catalog.views.CategoryView;
 public class CategoryControllerTest {
 
 	private CategoryController categoryController;
+
+	@Mock
 	private CategoryService categoryService;
+	@Mock
 	private CategoryView categoryView;
 
 	@Before
 	public void setup() {
-		categoryService = mock(CategoryService.class);
-		categoryView = mock(CategoryView.class);
+		MockitoAnnotations.openMocks(this);
 
 		categoryController = new CategoryController(categoryService, categoryView);
 	}
@@ -168,6 +171,18 @@ public class CategoryControllerTest {
 		inOrder.verify(categoryService).update(1L, "electronics");
 		inOrder.verify(categoryView).showError("Category name already exists");
 		verifyNoMoreInteractions(categoryService);
+	}
+
+	@Test
+	public void test_updateCategory_whenCategoryDoesNotExists_shouldThrowExcpetion() {
+		when(categoryService.update(999L, "books"))
+				.thenThrow(new EntityNotFoundException("category with id:" + 999L + " not found"));
+
+		categoryController.update(999L, "books");
+
+		InOrder inOrder = inOrder(categoryService, categoryView);
+		inOrder.verify(categoryService).update(999L, "books");
+		inOrder.verify(categoryView).showError("category with id:" + 999L + " not found");
 	}
 
 	@Test
