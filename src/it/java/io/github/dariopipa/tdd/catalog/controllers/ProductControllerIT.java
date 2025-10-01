@@ -34,6 +34,7 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 
 public class ProductControllerIT {
+
 	@SuppressWarnings("resource")
 	@ClassRule
 	public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(

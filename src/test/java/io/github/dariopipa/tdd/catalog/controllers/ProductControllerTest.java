@@ -28,6 +28,7 @@ import io.github.dariopipa.tdd.catalog.views.ProductView;
 public class ProductControllerTest {
 
 	private ProductController productController;
+
 	@Mock
 	private ProductService productService;
 

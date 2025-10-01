@@ -58,7 +58,7 @@ public class CategoryService {
 
 		Category result = categoryRepository.findById(id);
 		if (result == null) {
-			throw new EntityNotFoundException("category with id:" + id + "not found");
+			throw new EntityNotFoundException("category with id:" + id + " not found");
 		}
 
 		return result;

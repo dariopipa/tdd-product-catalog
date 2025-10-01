@@ -80,7 +80,7 @@ public class CategoryServiceTest {
 		when(categoryRepository.findById(nonExistingId)).thenReturn(null);
 
 		assertThatThrownBy(() -> categoryService.findById(nonExistingId)).isInstanceOf(EntityNotFoundException.class)
-				.hasMessage("category with id:" + nonExistingId + "not found");
+				.hasMessage("category with id:" + nonExistingId + " not found");
 
 		verify(transactionManager).doInTransaction(any());
 		verify(categoryRepository).findById(nonExistingId);
@@ -183,7 +183,7 @@ public class CategoryServiceTest {
 		when(categoryRepository.findById(nonExistingId)).thenReturn(null);
 
 		assertThatThrownBy(() -> categoryService.delete(nonExistingId)).isInstanceOf(EntityNotFoundException.class)
-				.hasMessage("category with id:" + nonExistingId + "not found");
+				.hasMessage("category with id:" + nonExistingId + " not found");
 
 		verify(transactionManager, times(1)).doInTransaction(any());
 		verify(categoryRepository).findById(nonExistingId);
@@ -215,7 +215,7 @@ public class CategoryServiceTest {
 
 		assertThatThrownBy(() -> categoryService.update(nonExistingId, newName))
 				.isInstanceOf(EntityNotFoundException.class)
-				.hasMessage("category with id:" + nonExistingId + "not found");
+				.hasMessage("category with id:" + nonExistingId + " not found");
 
 		verify(categoryRepository).findById(nonExistingId);
 		verify(categoryRepository, never()).findByName(newName);

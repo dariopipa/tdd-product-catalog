@@ -174,6 +174,18 @@ public class CategoryControllerTest {
 	}
 
 	@Test
+	public void test_updateCategory_whenCategoryDoesNotExists_shouldThrowExcpetion() {
+		when(categoryService.update(999L, "books"))
+				.thenThrow(new EntityNotFoundException("category with id:" + 999L + " not found"));
+
+		categoryController.update(999L, "books");
+
+		InOrder inOrder = inOrder(categoryService, categoryView);
+		inOrder.verify(categoryService).update(999L, "books");
+		inOrder.verify(categoryView).showError("category with id:" + 999L + " not found");
+	}
+
+	@Test
 	public void test_findAll_shouldReturnListOfCateegories() {
 		List<Category> categories = Arrays.asList(new Category("electronics"), new Category("tech"),
 				new Category("categories"));

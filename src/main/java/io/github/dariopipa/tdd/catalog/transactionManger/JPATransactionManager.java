@@ -21,10 +21,12 @@ public class JPATransactionManager implements TransactionManager {
 			entityTransaction.commit();
 
 			return result;
-		} catch (Exception e) {
-
+		} catch (RuntimeException e) {
 			entityTransaction.rollback();
-			throw new RuntimeException(e.getMessage());
+			throw e;
+		} catch (Exception e) {
+			entityTransaction.rollback();
+			throw new RuntimeException(e);
 		}
 	}
 }
