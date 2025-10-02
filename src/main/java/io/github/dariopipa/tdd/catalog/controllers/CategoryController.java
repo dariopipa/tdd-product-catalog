@@ -3,6 +3,7 @@ package io.github.dariopipa.tdd.catalog.controllers;
 import java.util.List;
 
 import io.github.dariopipa.tdd.catalog.entities.Category;
+import io.github.dariopipa.tdd.catalog.exceptions.CategoryInUseException;
 import io.github.dariopipa.tdd.catalog.exceptions.CategoryNameAlreadyExistsExcpetion;
 import io.github.dariopipa.tdd.catalog.exceptions.EntityNotFoundException;
 import io.github.dariopipa.tdd.catalog.service.CategoryService;
@@ -36,6 +37,8 @@ public class CategoryController {
 			Category deletedCategory = categoryService.findById(id);
 			categoryService.delete(id);
 			categoryView.deletedCategory(deletedCategory);
+		} catch (CategoryInUseException e) {
+			categoryView.showError("Category in use by existing products");
 		} catch (EntityNotFoundException e) {
 			categoryView.showError(e.getMessage());
 		}

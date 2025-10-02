@@ -248,6 +248,20 @@ public class ProductControllerTest {
 	}
 
 	@Test
+	public void test_updateProduct_withExistingName_shouldThrowExcpetion() {
+		String name = "existing-name";
+
+		when(productService.update(1L, name, BigDecimal.valueOf(199), 1L))
+				.thenThrow(new ProductNameAlreadyExistsExcpetion());
+
+		productController.update(1L, name, BigDecimal.valueOf(199), 1L);
+
+		InOrder inOrder = inOrder(productService, productView);
+		inOrder.verify(productService).update(1L, name, BigDecimal.valueOf(199), 1L);
+		inOrder.verify(productView).showError("Invalid input: Product name already exists");
+	}
+
+	@Test
 	public void test_updateProduct_withNegativePrice_shouldThrowException() {
 		String name = "product";
 

@@ -89,7 +89,7 @@ public class ProductControllerIT {
 		productRepository = new JpaProductRepositoryImpl(em);
 
 		categoryRepository = new JpaCategoryRepositoryImpl(em);
-		categoryService = new CategoryService(categoryRepository, transactionManager);
+		categoryService = new CategoryService(categoryRepository, transactionManager, productRepository);
 
 		productService = new ProductService(productRepository, categoryService, transactionManager);
 		productController = new ProductController(productService, productView);

@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import io.github.dariopipa.tdd.catalog.entities.Category;
+import io.github.dariopipa.tdd.catalog.exceptions.CategoryInUseException;
 import io.github.dariopipa.tdd.catalog.exceptions.CategoryNameAlreadyExistsExcpetion;
 import io.github.dariopipa.tdd.catalog.exceptions.EntityNotFoundException;
 import io.github.dariopipa.tdd.catalog.service.CategoryService;
@@ -210,6 +211,21 @@ public class CategoryControllerTest {
 		verify(categoryService).findAll();
 		verify(categoryView).findAllCategories(emptyList);
 		verifyNoMoreInteractions(categoryService, categoryView);
+	}
+
+	@Test
+	public void test_deleteCategoryInUseByProducts_shouldThrowExcpetion() {
+		Category existingCategory = new Category("Electronics");
+
+		when(categoryService.findById(1L)).thenReturn(existingCategory);
+		when(categoryService.delete(1L)).thenThrow(new CategoryInUseException());
+
+		categoryController.delete(1L);
+
+		InOrder inOrder = inOrder(categoryService, categoryView);
+		inOrder.verify(categoryService).findById(1L);
+		inOrder.verify(categoryService).delete(1L);
+		inOrder.verify(categoryView).showError("Category in use by existing products");
 	}
 
 }

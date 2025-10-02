@@ -22,9 +22,11 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import io.github.dariopipa.tdd.catalog.entities.Category;
+import io.github.dariopipa.tdd.catalog.exceptions.CategoryInUseException;
 import io.github.dariopipa.tdd.catalog.exceptions.CategoryNameAlreadyExistsExcpetion;
 import io.github.dariopipa.tdd.catalog.exceptions.EntityNotFoundException;
 import io.github.dariopipa.tdd.catalog.repository.CategoryRepository;
+import io.github.dariopipa.tdd.catalog.repository.ProductRepository;
 import io.github.dariopipa.tdd.catalog.transactionManger.TransactionCode;
 import io.github.dariopipa.tdd.catalog.transactionManger.TransactionManager;
 
@@ -38,6 +40,9 @@ public class CategoryServiceTest {
 	@Mock
 	private TransactionManager transactionManager;
 
+	@Mock
+	private ProductRepository productRepository;
+
 	private final long entityId = 1L;
 	private final long nonExistingId = 999L;
 	private final String newName = " new Name ";
@@ -49,7 +54,7 @@ public class CategoryServiceTest {
 
 		when(transactionManager.doInTransaction(any())).thenAnswer(answer((TransactionCode<?> code) -> code.execute()));
 
-		categoryService = new CategoryService(categoryRepository, transactionManager);
+		categoryService = new CategoryService(categoryRepository, transactionManager, productRepository);
 	}
 
 	@Test
@@ -286,4 +291,21 @@ public class CategoryServiceTest {
 		verify(transactionManager).doInTransaction(any());
 		verify(categoryRepository).findAll();
 	}
+
+	@Test
+	public void test_deleteCategoryThatIsUsedByProducts_shouldThrowCategoryInUseException() {
+		Category existingCategory = new Category(normalizedName);
+		existingCategory.setId(1L);
+
+		when(categoryRepository.findById(entityId)).thenReturn(existingCategory);
+		when(productRepository.countByCategoryId(entityId)).thenReturn(2L);
+
+		assertThatThrownBy(() -> categoryService.delete(entityId)).isInstanceOf(CategoryInUseException.class);
+
+		InOrder inOrder = Mockito.inOrder(categoryRepository, productRepository);
+		inOrder.verify(categoryRepository).findById(entityId);
+		inOrder.verify(productRepository).countByCategoryId(1L);
+		inOrder.verify(categoryRepository, never()).delete(existingCategory);
+	}
+
 }

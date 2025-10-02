@@ -2,7 +2,6 @@ package io.github.dariopipa.tdd.catalog.views;
 
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -42,26 +41,10 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 	private ProductController productController;
 
 	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					CatalogSwingView frame = new CatalogSwingView();
-					frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
-
-	/**
 	 * Create the frame.
 	 */
 	public CatalogSwingView() {
-		setSize(new Dimension(500, 500));
+		setSize(new Dimension(600, 500));
 		setFont(new Font("Arial", Font.BOLD, 12));
 		setTitle("Catalog");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -234,7 +217,7 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 		productTable.getSelectionModel().addListSelectionListener(e -> {
 			int selectedRow = productTable.getSelectedRow();
 			boolean isRowSelected = selectedRow >= 0;
-			updateProductButton.setEnabled(isRowSelected);
+			updateProductButton.setEnabled(isRowSelected && activateAddProductButtonIfValid());
 			deleteProductButton.setEnabled(isRowSelected);
 		});
 		productTable
@@ -277,6 +260,7 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 			@Override
 			public void keyReleased(KeyEvent e) {
 				addProductButton.setEnabled(activateAddProductButtonIfValid());
+				updateProductButton.setEnabled(activateAddProductButtonIfValid());
 			}
 		});
 		productNewName.setName("productNewName");
@@ -288,9 +272,8 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 		productNewPrice.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyReleased(KeyEvent e) {
-				addProductButton
-						.setEnabled(!productNewName.getText().isEmpty() && validatePrice(productNewPrice.getText())
-								&& productCategorySelectBox.getSelectedItem() != null);
+				addProductButton.setEnabled(activateAddProductButtonIfValid());
+				updateProductButton.setEnabled(productTable.getSelectedRow() >= 0 && activateAddProductButtonIfValid());
 			}
 		});
 		productNewPrice.setName("productNewPrice");
@@ -302,6 +285,7 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 		productCategorySelectBox.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				addProductButton.setEnabled(activateAddProductButtonIfValid());
+				updateProductButton.setEnabled(productTable.getSelectedRow() >= 0 && activateAddProductButtonIfValid());
 			}
 
 		});
@@ -365,7 +349,7 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 	@Override
 	public void addedCategory(Category category) {
 		categoryModel().addRow(new Object[] { category.getId(), category.getName() });
-
+		categoryController.findAll();
 		showError("");
 	}
 
@@ -380,6 +364,8 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 		if (selectedRow != -1) {
 			categoryModel().removeRow(selectedRow);
 		}
+		categoryController.findAll();
+
 	}
 
 	@Override
@@ -389,6 +375,7 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 			categoryModel().setValueAt(category.getName(), selectedRow, 1);
 		}
 		showError("");
+		categoryController.findAll();
 	}
 
 	@Override
@@ -409,6 +396,7 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 
 	public void setProductController(ProductController productController) {
 		this.productController = productController;
+		productController.findAll();
 	}
 
 	// helper functions.

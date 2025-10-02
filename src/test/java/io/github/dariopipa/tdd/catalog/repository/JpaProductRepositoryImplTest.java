@@ -163,4 +163,19 @@ public class JpaProductRepositoryImplTest {
 		assertThat(result).hasSize(2);
 		assertThat(result).contains(product1, product2);
 	}
+
+	@Test
+	public void test_returnCountOfProductsThatUseASpecificCategory() {
+		Product product = new Product(productName, productPrice, category);
+		Product iphone = new Product("iphone", productPrice, category);
+
+		transaction.begin();
+		jpaProductRepositoryImpl.create(product);
+		jpaProductRepositoryImpl.create(iphone);
+		transaction.commit();
+
+		Long result = jpaProductRepositoryImpl.countByCategoryId(1L);
+
+		assertThat(result).isEqualTo(2L);
+	}
 }

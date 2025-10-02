@@ -3,19 +3,24 @@ package io.github.dariopipa.tdd.catalog.service;
 import java.util.List;
 
 import io.github.dariopipa.tdd.catalog.entities.Category;
+import io.github.dariopipa.tdd.catalog.exceptions.CategoryInUseException;
 import io.github.dariopipa.tdd.catalog.exceptions.CategoryNameAlreadyExistsExcpetion;
 import io.github.dariopipa.tdd.catalog.exceptions.EntityNotFoundException;
 import io.github.dariopipa.tdd.catalog.repository.CategoryRepository;
+import io.github.dariopipa.tdd.catalog.repository.ProductRepository;
 import io.github.dariopipa.tdd.catalog.transactionManger.TransactionManager;
 
 public class CategoryService {
 
 	private CategoryRepository categoryRepository;
 	private TransactionManager transactionManager;
+	private ProductRepository productRepository;
 
-	public CategoryService(CategoryRepository categoryRepository, TransactionManager transactionManager) {
+	public CategoryService(CategoryRepository categoryRepository, TransactionManager transactionManager,
+			ProductRepository productRepository) {
 		this.categoryRepository = categoryRepository;
 		this.transactionManager = transactionManager;
+		this.productRepository = productRepository;
 	}
 
 	public Long createCategory(String name) {
@@ -32,6 +37,12 @@ public class CategoryService {
 	public String delete(Long id) {
 		return transactionManager.doInTransaction(() -> {
 			Category existingCategory = findByIdInternal(id);
+
+			long used = productRepository.countByCategoryId(existingCategory.getId());
+			if (used > 0) {
+				throw new CategoryInUseException();
+			}
+
 			return categoryRepository.delete(existingCategory);
 		});
 	}

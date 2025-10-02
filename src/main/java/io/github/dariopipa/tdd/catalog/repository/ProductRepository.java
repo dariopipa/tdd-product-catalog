@@ -16,4 +16,6 @@ public interface ProductRepository {
 	Product update(Product product);
 
 	List<Product> findAll();
+
+	Long countByCategoryId(Long categoryId);
 }

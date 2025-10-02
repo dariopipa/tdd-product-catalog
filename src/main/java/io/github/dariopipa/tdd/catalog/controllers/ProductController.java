@@ -47,16 +47,16 @@ public class ProductController {
 	}
 
 	public void update(Long id, String newName, BigDecimal valueOf, Long categoryId) {
-
 		try {
 			Product updatedProduct = productService.update(id, newName, valueOf, categoryId);
 			productView.updateProduct(updatedProduct);
+		} catch (ProductNameAlreadyExistsExcpetion e) {
+			productView.showError("Invalid input: Product name already exists");
 		} catch (IllegalArgumentException e) {
 			productView.showError("Invalid input: " + e.getMessage());
 		} catch (Exception e) {
 			productView.showError("Invalid input: " + e.getMessage());
 		}
-
 	}
 
 }
