@@ -70,7 +70,7 @@ public class CatalogSwingViewIT extends AssertJSwingJUnitTestCase {
 		transactionManager = new JPATransactionManager(em);
 		categoryRepository = new JpaCategoryRepositoryImpl(em);
 		productRepository = new JpaProductRepositoryImpl(em);
-		categoryService = new CategoryService(categoryRepository, transactionManager);
+		categoryService = new CategoryService(categoryRepository, transactionManager, productRepository);
 		productService = new ProductService(productRepository, categoryService, transactionManager);
 		categoryController = new CategoryController(categoryService, catalogSwingView);
 		productController = new ProductController(productService, catalogSwingView);
@@ -279,6 +279,26 @@ public class CatalogSwingViewIT extends AssertJSwingJUnitTestCase {
 		productController.update(999L, "updated", new BigDecimal("1"), techId);
 
 		frameFixture.label("errorLabel").requireText("Invalid input: product with id: 999 not found");
+	}
+
+	@Test
+	@GUITest
+	public void test_deleteCategoryThatIsUsedByProducts_shouldShowErrorIt() {
+		GuiActionRunner.execute(() -> {
+			categoryController.create("tech");
+		});
+
+		Long categoryId = categoryRepository.findByName("tech").getId();
+		GuiActionRunner.execute(() -> {
+			productController.create("laptop", new BigDecimal("1000"), categoryId);
+			productController.create("novel", new BigDecimal("15"), categoryId);
+		});
+
+		frameFixture.table("categoryTable").selectRows(0);
+		frameFixture.button("deleteCategoryButton").click();
+
+		frameFixture.table("categoryTable").requireRowCount(1);
+		frameFixture.label("errorLabel").requireText("Category in use by existing products");
 	}
 
 }

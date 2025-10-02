@@ -56,4 +56,9 @@ public class JpaProductRepositoryImpl implements ProductRepository {
 		return entityManager.createQuery("SELECT p FROM Product p", Product.class).getResultList();
 	}
 
+	@Override
+	public Long countByCategoryId(Long categoryId) {
+		return entityManager.createQuery("SELECT COUNT(p) FROM Product p WHERE p.category.id = :categoryId", Long.class)
+				.setParameter("categoryId", categoryId).getSingleResult();
+	}
 }

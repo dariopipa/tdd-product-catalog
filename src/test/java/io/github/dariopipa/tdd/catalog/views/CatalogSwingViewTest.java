@@ -242,6 +242,28 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 
 	@Test
 	@GUITest
+	public void test_updateButtonProductIsDisabled_whenItemIsSelectedAndPriceOrTextAreEmpty() {
+		Category category = new Category("tech");
+
+		GuiActionRunner.execute(() -> {
+			DefaultTableModel model = (DefaultTableModel) frameFixture.table("productTable").target().getModel();
+			model.addRow(new Object[] { 1L, "product1", 99, category });
+			model.addRow(new Object[] { 2L, "product2", 99, category });
+		});
+
+		frameFixture.table("productTable").selectRows(0);
+
+		frameFixture.button("updateProductButton").requireDisabled();
+		frameFixture.button("deleteProductButton").requireEnabled();
+
+		frameFixture.textBox("productNewName").setText("product new name ");
+		frameFixture.textBox("productNewPrice").setText("111");
+
+		frameFixture.button("updateProductButton").requireEnabled();
+	}
+
+	@Test
+	@GUITest
 	public void test_errorLabel_getsRemovedWhenValidPriceIsFixedAndEnteredCorrectly() {
 		GuiActionRunner.execute(() -> {
 			@SuppressWarnings("unchecked")
@@ -522,7 +544,6 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 		frameFixture.table("productTable").requireNoSelection();
 
 		GuiActionRunner.execute(() -> catalogSwingView.deletedProduct(product));
-
 		frameFixture.table("productTable").requireRowCount(1);
 	}
 
@@ -897,5 +918,29 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 		Long result = GuiActionRunner.execute(() -> catalogSwingView.getSelectedIdFromCategoryTypes());
 
 		assertThat(result).isEqualTo(1L);
+	}
+
+	@Test
+	@GUITest
+	public void test_deleteCategoryInUseFromProducts_shouldShowErrorMessage() {
+		Category category = new Category("books");
+		category.setId(1L);
+
+		GuiActionRunner.execute(() -> {
+			catalogSwingView.addedCategory(category);
+			return null;
+		});
+
+		frameFixture.table("categoryTable").selectRows(0);
+		frameFixture.button("deleteCategoryButton").click();
+
+		verify(categoryController, times(1)).delete(1L);
+
+		GuiActionRunner.execute(() -> {
+			catalogSwingView.showError("Category in use by existing products");
+			return null;
+		});
+
+		frameFixture.label("errorLabel").requireText("Category in use by existing products");
 	}
 }
