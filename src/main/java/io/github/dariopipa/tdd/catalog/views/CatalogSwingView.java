@@ -208,7 +208,7 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 
 		JScrollPane scrollPane = new JScrollPane();
 		scrollPane.setFocusable(false);
-		scrollPane.setName("productTable");
+		scrollPane.setName("productScrollPane");
 		scrollPane.setBounds(38, 28, 223, 138);
 		productPanel.add(scrollPane);
 

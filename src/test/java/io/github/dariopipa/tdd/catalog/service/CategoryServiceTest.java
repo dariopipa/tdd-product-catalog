@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -43,52 +44,63 @@ public class CategoryServiceTest {
 	@Mock
 	private ProductRepository productRepository;
 
-	private final long entityId = 1L;
-	private final long nonExistingId = 999L;
-	private final String newName = " new Name ";
-	private final String normalizedName = "new name";
+	private AutoCloseable closeable;
+
+	private static final long EXISTING_ID = 1L;
+	private static final long MISSING_ID = 999L;
+
+	private static final String CATEGORY_NAME_RAW = " new Name ";
+	private static final String CATEGORY_NAME_NORMALIZED = "new name";
+
+	private static final String BLANK_NAME = " ";
+	private static final String BLANK_TABS_NAME = "\t\t\t    ";
 
 	@Before
 	public void setup() {
-		MockitoAnnotations.openMocks(this);
+		closeable = MockitoAnnotations.openMocks(this);
 
 		when(transactionManager.doInTransaction(any())).thenAnswer(answer((TransactionCode<?> code) -> code.execute()));
 
 		categoryService = new CategoryService(categoryRepository, transactionManager, productRepository);
 	}
 
+	@After
+	public void tearDown() throws Exception {
+		closeable.close();
+	}
+
 	@Test
 	public void test_whenCreatingCategory_shouldSaveAndReturnLongId() {
-		when(categoryRepository.create(any(Category.class))).thenReturn(entityId);
+		when(categoryRepository.create(any(Category.class))).thenReturn(EXISTING_ID);
 
-		Long result = categoryService.createCategory("tech");
+		Long result = categoryService.createCategory(CATEGORY_NAME_RAW);
 
-		assertThat(result).isEqualTo(entityId);
+		assertThat(result).isEqualTo(EXISTING_ID);
 		verify(transactionManager).doInTransaction(any());
 		verify(categoryRepository).create(any(Category.class));
 	}
 
 	@Test
 	public void test_whenCategoryExists_shouldReturnCategoryEntity() {
-		when(categoryRepository.create(any(Category.class))).thenReturn(entityId);
-		when(categoryRepository.findById(entityId)).thenReturn(new Category("tech"));
+		when(categoryRepository.create(any(Category.class))).thenReturn(EXISTING_ID);
+		when(categoryRepository.findById(EXISTING_ID)).thenReturn(new Category(CATEGORY_NAME_NORMALIZED));
 
-		Category category = categoryService.findById(entityId);
+		Category category = categoryService.findById(EXISTING_ID);
 
-		assertThat(category.getName()).isEqualTo("tech");
+		assertThat(category.getName()).isEqualTo(CATEGORY_NAME_NORMALIZED);
 		verify(transactionManager).doInTransaction(any());
-		verify(categoryRepository).findById(entityId);
+		verify(categoryRepository).findById(EXISTING_ID);
 	}
 
 	@Test
 	public void test_whenCategoryIdDoesntExist_shouldThrowEntityDoesNotExist() {
-		when(categoryRepository.findById(nonExistingId)).thenReturn(null);
+		when(categoryRepository.findById(MISSING_ID)).thenReturn(null);
 
-		assertThatThrownBy(() -> categoryService.findById(nonExistingId)).isInstanceOf(EntityNotFoundException.class)
-				.hasMessage("category with id:" + nonExistingId + " not found");
+		assertThatThrownBy(() -> categoryService.findById(MISSING_ID)).isInstanceOf(EntityNotFoundException.class)
+				.hasMessage("category with id:" + MISSING_ID + " not found");
 
 		verify(transactionManager).doInTransaction(any());
-		verify(categoryRepository).findById(nonExistingId);
+		verify(categoryRepository).findById(MISSING_ID);
 	}
 
 	@Test
@@ -126,19 +138,20 @@ public class CategoryServiceTest {
 
 	@Test
 	public void test_whenCreatingEntityWithExistingName_shouldThrowCategoryNameAlreadyExistsExcpetion() {
-		when(categoryRepository.findByName(normalizedName)).thenReturn(new Category(normalizedName));
+		when(categoryRepository.findByName(CATEGORY_NAME_NORMALIZED))
+				.thenReturn(new Category(CATEGORY_NAME_NORMALIZED));
 
-		assertThatThrownBy(() -> categoryService.createCategory(normalizedName))
+		assertThatThrownBy(() -> categoryService.createCategory(CATEGORY_NAME_NORMALIZED))
 				.isInstanceOf(CategoryNameAlreadyExistsExcpetion.class);
 
 		verify(transactionManager).doInTransaction(any());
-		verify(categoryRepository).findByName(normalizedName);
+		verify(categoryRepository).findByName(CATEGORY_NAME_NORMALIZED);
 		verify(categoryRepository, never()).create(any(Category.class));
 	}
 
 	@Test
 	public void test_whenCreatingEntity_withBlankName_shouldThrowIllegalArgumentExceptionWithNameMustBeValidMessage() {
-		assertThatThrownBy(() -> categoryService.createCategory("\t\t\t    "))
+		assertThatThrownBy(() -> categoryService.createCategory(BLANK_TABS_NAME))
 				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name must be provided");
 
 		verify(transactionManager).doInTransaction(any());
@@ -147,130 +160,131 @@ public class CategoryServiceTest {
 
 	@Test
 	public void test_whenCreatingEntity_withEmptySpaces_shouldThrowIllegalArgumentExceptionWithNameMustBeValidMessage() {
-		assertThatThrownBy(() -> categoryService.createCategory(" ")).isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("name must be provided");
+		assertThatThrownBy(() -> categoryService.createCategory(BLANK_NAME))
+				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name must be provided");
 
 		verify(categoryRepository, never()).create(any(Category.class));
 	}
 
 	@Test
 	public void test_whenCreatingEntity_withNonNormalizedName_shouldCreateEntityWithNormalizedName() {
-		when(categoryRepository.findByName("new name")).thenReturn(null);
-		when(categoryRepository.create(any(Category.class))).thenReturn(entityId);
+		when(categoryRepository.findByName(CATEGORY_NAME_NORMALIZED)).thenReturn(null);
+		when(categoryRepository.create(any(Category.class))).thenReturn(EXISTING_ID);
 
-		Long result = categoryService.createCategory(newName);
+		Long result = categoryService.createCategory(CATEGORY_NAME_RAW);
 
-		assertThat(result).isEqualTo(entityId);
+		assertThat(result).isEqualTo(EXISTING_ID);
 		verify(transactionManager).doInTransaction(any());
-		verify(categoryRepository).findByName("new name");
+		verify(categoryRepository).findByName(CATEGORY_NAME_NORMALIZED);
 		verify(categoryRepository).create(any(Category.class));
 	}
 
 	@Test
 	public void test_whenDeletingExistingCategory_shouldReturnDeletedMessage() {
-		Category existingCategory = new Category(normalizedName);
+		Category existingCategory = new Category(CATEGORY_NAME_NORMALIZED);
 
-		when(categoryRepository.findById(entityId)).thenReturn(existingCategory);
+		when(categoryRepository.findById(EXISTING_ID)).thenReturn(existingCategory);
 		when(categoryRepository.delete(existingCategory)).thenReturn("Deleted");
 
-		String result = categoryService.delete(entityId);
+		String result = categoryService.delete(EXISTING_ID);
 
 		assertThat(result).isEqualTo("Deleted");
 
 		InOrder inOrder = Mockito.inOrder(categoryRepository, transactionManager);
 		verify(transactionManager, times(1)).doInTransaction(any());
-		inOrder.verify(categoryRepository).findById(entityId);
+		inOrder.verify(categoryRepository).findById(EXISTING_ID);
 		inOrder.verify(categoryRepository).delete(existingCategory);
 	}
 
 	@Test
 	public void test_whenDeletingNonExistingCategory_throwEntityNotFoundException() {
-		when(categoryRepository.findById(nonExistingId)).thenReturn(null);
+		when(categoryRepository.findById(MISSING_ID)).thenReturn(null);
 
-		assertThatThrownBy(() -> categoryService.delete(nonExistingId)).isInstanceOf(EntityNotFoundException.class)
-				.hasMessage("category with id:" + nonExistingId + " not found");
+		assertThatThrownBy(() -> categoryService.delete(MISSING_ID)).isInstanceOf(EntityNotFoundException.class)
+				.hasMessage("category with id:" + MISSING_ID + " not found");
 
 		verify(transactionManager, times(1)).doInTransaction(any());
-		verify(categoryRepository).findById(nonExistingId);
+		verify(categoryRepository).findById(MISSING_ID);
 		verify(categoryRepository, never()).delete(any());
 	}
 
 	@Test
 	public void test_whenUpdatingExistingCategory_shouldReturnUpdatedName() {
-		Category existingCategory = new Category("Old Name");
+		Category existingCategory = new Category(CATEGORY_NAME_RAW);
 
-		when(categoryRepository.findById(entityId)).thenReturn(existingCategory);
-		when(categoryRepository.findByName(normalizedName)).thenReturn(null);
-		when(categoryRepository.update(existingCategory)).thenReturn(new Category(normalizedName));
+		when(categoryRepository.findById(EXISTING_ID)).thenReturn(existingCategory);
+		when(categoryRepository.findByName(CATEGORY_NAME_NORMALIZED)).thenReturn(null);
+		when(categoryRepository.update(existingCategory)).thenReturn(new Category(CATEGORY_NAME_NORMALIZED));
 
-		Category categoryResult = categoryService.update(entityId, newName);
+		Category categoryResult = categoryService.update(EXISTING_ID, CATEGORY_NAME_RAW);
 
-		assertThat(categoryResult.getName()).isEqualTo(normalizedName);
-		assertThat(existingCategory.getName()).isEqualTo(normalizedName);
+		assertThat(categoryResult.getName()).isEqualTo(CATEGORY_NAME_NORMALIZED);
+		assertThat(existingCategory.getName()).isEqualTo(CATEGORY_NAME_NORMALIZED);
 
 		InOrder inOrder = inOrder(categoryRepository, transactionManager);
 		inOrder.verify(transactionManager).doInTransaction(any());
-		inOrder.verify(categoryRepository).findByName(normalizedName);
+		inOrder.verify(categoryRepository).findByName(CATEGORY_NAME_NORMALIZED);
 		inOrder.verify(categoryRepository).update(existingCategory);
 	}
 
 	@Test
 	public void test_whenUpdatingCategoryDoesntExist_shouldThrowEntityNotFoundExcpetion() {
-		when(categoryRepository.findById(nonExistingId)).thenReturn(null);
+		when(categoryRepository.findById(MISSING_ID)).thenReturn(null);
 
-		assertThatThrownBy(() -> categoryService.update(nonExistingId, newName))
+		assertThatThrownBy(() -> categoryService.update(MISSING_ID, CATEGORY_NAME_RAW))
 				.isInstanceOf(EntityNotFoundException.class)
-				.hasMessage("category with id:" + nonExistingId + " not found");
+				.hasMessage("category with id:" + MISSING_ID + " not found");
 
-		verify(categoryRepository).findById(nonExistingId);
-		verify(categoryRepository, never()).findByName(newName);
-		verify(categoryRepository, never()).update(new Category(newName));
+		verify(categoryRepository).findById(MISSING_ID);
+		verify(categoryRepository, never()).findByName(CATEGORY_NAME_RAW);
+		verify(categoryRepository, never()).update(new Category(CATEGORY_NAME_RAW));
 	}
 
 	@Test
 	public void test_whenUpdatingCategoryWithAnExistingName_shouldThrowCategoryNameAlreadyExistsExcpetion() {
-		when(categoryRepository.findById(entityId)).thenReturn(new Category(normalizedName));
-		when(categoryRepository.findByName(normalizedName)).thenReturn(new Category(normalizedName));
+		when(categoryRepository.findById(EXISTING_ID)).thenReturn(new Category(CATEGORY_NAME_NORMALIZED));
+		when(categoryRepository.findByName(CATEGORY_NAME_NORMALIZED))
+				.thenReturn(new Category(CATEGORY_NAME_NORMALIZED));
 
-		assertThatThrownBy(() -> categoryService.update(entityId, newName))
+		assertThatThrownBy(() -> categoryService.update(EXISTING_ID, CATEGORY_NAME_RAW))
 				.isInstanceOf(CategoryNameAlreadyExistsExcpetion.class);
 
 		verify(transactionManager, times(1)).doInTransaction(any());
-		verify(categoryRepository).findById(entityId);
-		verify(categoryRepository).findByName(normalizedName);
+		verify(categoryRepository).findById(EXISTING_ID);
+		verify(categoryRepository).findByName(CATEGORY_NAME_NORMALIZED);
 		verify(categoryRepository, never()).update(any(Category.class));
 	}
 
 	@Test
 	public void test_whenUpdatingCategoryNullName_shouldThrowIllegalArgumentExcpetion() {
-		when(categoryRepository.findById(entityId)).thenReturn(new Category(normalizedName));
-		when(categoryRepository.findByName(newName)).thenReturn(null);
+		when(categoryRepository.findById(EXISTING_ID)).thenReturn(new Category(CATEGORY_NAME_NORMALIZED));
+		when(categoryRepository.findByName(CATEGORY_NAME_RAW)).thenReturn(null);
 
-		assertThatThrownBy(() -> categoryService.update(entityId, null)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> categoryService.update(EXISTING_ID, null)).isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("name must be provided");
 
 		verify(transactionManager, times(1)).doInTransaction(any());
-		verify(categoryRepository).findById(entityId);
-		verify(categoryRepository, never()).findByName(normalizedName);
+		verify(categoryRepository).findById(EXISTING_ID);
+		verify(categoryRepository, never()).findByName(CATEGORY_NAME_NORMALIZED);
 		verify(categoryRepository, never()).update(any(Category.class));
 	}
 
 	@Test
 	public void test_whenUpdatingCategoryBlankName_shouldThrowIllegalArgumentExcpetion() {
-		when(categoryRepository.findById(entityId)).thenReturn(new Category(normalizedName));
-		when(categoryRepository.findByName(newName)).thenReturn(null);
+		when(categoryRepository.findById(EXISTING_ID)).thenReturn(new Category(CATEGORY_NAME_NORMALIZED));
+		when(categoryRepository.findByName(CATEGORY_NAME_RAW)).thenReturn(null);
 
-		assertThatThrownBy(() -> categoryService.update(entityId, "\t \t \t "))
+		assertThatThrownBy(() -> categoryService.update(EXISTING_ID, BLANK_TABS_NAME))
 				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name must be provided");
 
 		verify(transactionManager, times(1)).doInTransaction(any());
-		verify(categoryRepository, never()).findByName(normalizedName);
+		verify(categoryRepository, never()).findByName(CATEGORY_NAME_NORMALIZED);
 		verify(categoryRepository, never()).update(any(Category.class));
 	}
 
 	@Test
 	public void test_findAllWithElements_returnListOfProducts() {
-		when(categoryRepository.findAll()).thenReturn(asList(new Category("category 1"), new Category("Category 2")));
+		when(categoryRepository.findAll()).thenReturn(asList(new Category("category 1"), new Category("category 2")));
 
 		List<Category> result = categoryService.findAll();
 
@@ -294,17 +308,17 @@ public class CategoryServiceTest {
 
 	@Test
 	public void test_deleteCategoryThatIsUsedByProducts_shouldThrowCategoryInUseException() {
-		Category existingCategory = new Category(normalizedName);
-		existingCategory.setId(1L);
+		Category existingCategory = new Category(CATEGORY_NAME_NORMALIZED);
+		existingCategory.setId(EXISTING_ID);
 
-		when(categoryRepository.findById(entityId)).thenReturn(existingCategory);
-		when(productRepository.countByCategoryId(entityId)).thenReturn(2L);
+		when(categoryRepository.findById(EXISTING_ID)).thenReturn(existingCategory);
+		when(productRepository.countByCategoryId(EXISTING_ID)).thenReturn(2L);
 
-		assertThatThrownBy(() -> categoryService.delete(entityId)).isInstanceOf(CategoryInUseException.class);
+		assertThatThrownBy(() -> categoryService.delete(EXISTING_ID)).isInstanceOf(CategoryInUseException.class);
 
 		InOrder inOrder = Mockito.inOrder(categoryRepository, productRepository);
-		inOrder.verify(categoryRepository).findById(entityId);
-		inOrder.verify(productRepository).countByCategoryId(1L);
+		inOrder.verify(categoryRepository).findById(EXISTING_ID);
+		inOrder.verify(productRepository).countByCategoryId(EXISTING_ID);
 		inOrder.verify(categoryRepository, never()).delete(existingCategory);
 	}
 

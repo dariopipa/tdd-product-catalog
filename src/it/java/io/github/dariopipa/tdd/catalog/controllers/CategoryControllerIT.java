@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -20,6 +21,7 @@ import org.testcontainers.utility.DockerImageName;
 import io.github.dariopipa.tdd.catalog.entities.Category;
 import io.github.dariopipa.tdd.catalog.repository.CategoryRepository;
 import io.github.dariopipa.tdd.catalog.repository.JpaCategoryRepositoryImpl;
+import io.github.dariopipa.tdd.catalog.repository.JpaProductRepositoryImpl;
 import io.github.dariopipa.tdd.catalog.repository.ProductRepository;
 import io.github.dariopipa.tdd.catalog.service.CategoryService;
 import io.github.dariopipa.tdd.catalog.transactionManger.JPATransactionManager;
@@ -29,6 +31,9 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 
 public class CategoryControllerIT {
+
+	private static final String CATEGORY_NAME = "tech";
+	private static final String CATEGORY_UPDATED_NAME = "books";
 
 	@SuppressWarnings("resource")
 	@ClassRule
@@ -43,6 +48,8 @@ public class CategoryControllerIT {
 	private JPATransactionManager transactionManager;
 	private CategoryController categoryController;
 	private ProductRepository productRepository;
+
+	private AutoCloseable closeable;
 
 	@Mock
 	private CategoryView categoryView;
@@ -63,7 +70,7 @@ public class CategoryControllerIT {
 
 	@Before
 	public void setUp() {
-		MockitoAnnotations.openMocks(this);
+		closeable = MockitoAnnotations.openMocks(this);
 
 		// this will make sure that the db is empty every time
 		EntityManager tempEm = emf.createEntityManager();
@@ -75,30 +82,32 @@ public class CategoryControllerIT {
 
 		em = emf.createEntityManager();
 		categoryRepository = new JpaCategoryRepositoryImpl(em);
+		productRepository = new JpaProductRepositoryImpl(em);
 		transactionManager = new JPATransactionManager(em);
 		categoryService = new CategoryService(categoryRepository, transactionManager, productRepository);
 		categoryController = new CategoryController(categoryService, categoryView);
 	}
 
+	@After
+	public void tearDown() throws Exception {
+		closeable.close();
+		em.close();
+	}
+
 	@Test
 	public void shouldSaveCategoryInDatabase_whenControllerCreatesCategoryIT() {
-		String categoryName = "integration-category";
-
-		categoryController.create(categoryName);
-		Category saved = categoryRepository.findByName(categoryName);
+		categoryController.create(CATEGORY_NAME);
+		Category saved = categoryRepository.findByName(CATEGORY_NAME);
 
 		assertThat(saved).isNotNull();
-		assertThat(categoryName).isEqualTo(saved.getName());
+		assertThat(CATEGORY_NAME).isEqualTo(saved.getName());
 		verify(categoryView).addedCategory(saved);
 	}
 
 	@Test
 	public void shouldReturnAllCategoriesFromDB_whenControllerCallsFindAllIT() {
-		String bookCategory = "integration-books";
-		String techCategory = "integration-tech";
-
-		categoryController.create(bookCategory);
-		categoryController.create(techCategory);
+		categoryController.create(CATEGORY_NAME);
+		categoryController.create(CATEGORY_UPDATED_NAME);
 
 		categoryController.findAll();
 
@@ -110,13 +119,11 @@ public class CategoryControllerIT {
 
 	@Test
 	public void shouldDeleteCategoryInDatabase_whenControllerDeletesCategoryIT() {
-		String categoryName = "category";
-
-		categoryController.create(categoryName);
-		Category beforeDelete = categoryRepository.findByName(categoryName);
+		categoryController.create(CATEGORY_NAME);
+		Category beforeDelete = categoryRepository.findByName(CATEGORY_NAME);
 
 		assertThat(beforeDelete).isNotNull();
-		assertThat(beforeDelete.getName()).isEqualTo(categoryName);
+		assertThat(beforeDelete.getName()).isEqualTo(CATEGORY_NAME);
 
 		Long id = beforeDelete.getId();
 		categoryController.delete(id);
@@ -127,22 +134,19 @@ public class CategoryControllerIT {
 
 	@Test
 	public void shouldUpdateCategoryInDatabase_whenControllerUpdatesCategoryIT() {
-		String name = "tech";
-		String updatedName = "books";
-
-		categoryController.create(name);
-		Category beforeUpdate = categoryRepository.findByName(name);
+		categoryController.create(CATEGORY_NAME);
+		Category beforeUpdate = categoryRepository.findByName(CATEGORY_NAME);
 
 		assertThat(beforeUpdate).isNotNull();
-		assertThat(beforeUpdate.getName()).isEqualTo(name);
+		assertThat(beforeUpdate.getName()).isEqualTo(CATEGORY_NAME);
 
 		Long id = beforeUpdate.getId();
 
-		categoryController.update(id, updatedName);
+		categoryController.update(id, CATEGORY_UPDATED_NAME);
 		Category updatedCategory = categoryService.findById(id);
 
 		assertThat(updatedCategory).isNotNull();
-		assertThat(updatedCategory.getName()).isEqualTo(updatedName);
+		assertThat(updatedCategory.getName()).isEqualTo(CATEGORY_UPDATED_NAME);
 		assertThat(updatedCategory.getId()).isEqualTo(id);
 
 		verify(categoryView).updateCategory(updatedCategory);
