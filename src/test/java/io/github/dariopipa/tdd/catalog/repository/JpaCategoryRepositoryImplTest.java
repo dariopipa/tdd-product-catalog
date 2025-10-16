@@ -15,15 +15,21 @@ import jakarta.persistence.Persistence;
 
 public class JpaCategoryRepositoryImplTest {
 
+	private static final String PU_NAME = "product-catalog-IM-PU";
+
+	private static final long MISSING_ID = 999L;
+
+	private static final String CATEGORY_NAME = "category";
+	private static final String CATEGORY_NEW_NAME = "new category name";
+
 	private EntityManagerFactory entityManagerFactory;
 	private JpaCategoryRepositoryImpl jpaCategoryRepositoryImpl;
 	private EntityManager entityManager;
 	private EntityTransaction transaction;
-	private Long nonExistentId = 999L;
 
 	@Before
 	public void setup() {
-		entityManagerFactory = Persistence.createEntityManagerFactory("product-catalog-IM-PU");
+		entityManagerFactory = Persistence.createEntityManagerFactory(PU_NAME);
 		entityManager = entityManagerFactory.createEntityManager();
 		jpaCategoryRepositoryImpl = new JpaCategoryRepositoryImpl(entityManager);
 		transaction = entityManager.getTransaction();
@@ -31,7 +37,7 @@ public class JpaCategoryRepositoryImplTest {
 
 	@Test
 	public void test_createEntityInDatabase() {
-		Category category = new Category("name");
+		Category category = new Category(CATEGORY_NAME);
 
 		transaction.begin();
 		Long result = jpaCategoryRepositoryImpl.create(category);
@@ -42,12 +48,12 @@ public class JpaCategoryRepositoryImplTest {
 
 		Category found = entityManager.find(Category.class, result);
 		assertThat(found).isNotNull();
-		assertThat(found.getName()).isEqualTo("name");
+		assertThat(found.getName()).isEqualTo(CATEGORY_NAME);
 	}
 
 	@Test
 	public void test_findByExistingId_shouldReturnEntity() {
-		Category expectedCategory = new Category("name");
+		Category expectedCategory = new Category(CATEGORY_NAME);
 
 		transaction.begin();
 		entityManager.persist(expectedCategory);
@@ -57,21 +63,21 @@ public class JpaCategoryRepositoryImplTest {
 		Category result = jpaCategoryRepositoryImpl.findById(categoryId);
 
 		assertThat(result).isNotNull();
-		assertThat(result.getName()).isEqualTo("name");
+		assertThat(result.getName()).isEqualTo(CATEGORY_NAME);
 		assertThat(result.getId()).isEqualTo(categoryId);
 	}
 
 	@Test
 	public void test_findByNonExistingId_shouldReturnNull() {
-		Category result = jpaCategoryRepositoryImpl.findById(nonExistentId);
+		Category result = jpaCategoryRepositoryImpl.findById(MISSING_ID);
 
 		assertThat(result).isNull();
 	}
 
 	@Test
-	public void test_deleteById_shouldReturnDeletedMessage() {
+	public void test_delete_shouldReturnDeletedMessage() {
 		transaction.begin();
-		Category expectedCategory = new Category("electronics");
+		Category expectedCategory = new Category(CATEGORY_NAME);
 		entityManager.persist(expectedCategory);
 		transaction.commit();
 
@@ -86,45 +92,44 @@ public class JpaCategoryRepositoryImplTest {
 
 	@Test
 	public void test_updateCategory_shouldReturnUpdatedCategory() {
-		Category existingCategory = new Category("old-name");
+		Category existingCategory = new Category(CATEGORY_NAME);
 		transaction.begin();
 		entityManager.persist(existingCategory);
 		transaction.commit();
 
-		existingCategory.setName("new name");
+		existingCategory.setName(CATEGORY_NEW_NAME);
 
 		transaction.begin();
 		Category result = jpaCategoryRepositoryImpl.update(existingCategory);
 		transaction.commit();
 
 		assertThat(result).isNotNull();
-		assertThat(result.getName()).isEqualTo("new name");
+		assertThat(result.getName()).isEqualTo(CATEGORY_NEW_NAME);
 
 		Category found = entityManager.find(Category.class, result.getId());
 		assertThat(found).isNotNull();
-		assertThat(found.getName()).isEqualTo("new name");
+		assertThat(found.getName()).isEqualTo(CATEGORY_NEW_NAME);
 	}
 
 	@Test
 	public void test_findByName_shouldReturnFoundCategory() {
-		String categoryName = "electronics";
-		Category category = new Category(categoryName);
+		Category category = new Category(CATEGORY_NAME);
 
 		transaction.begin();
 		entityManager.persist(category);
 		transaction.commit();
 
-		Category result = jpaCategoryRepositoryImpl.findByName(categoryName);
+		Category result = jpaCategoryRepositoryImpl.findByName(CATEGORY_NAME);
 
 		assertThat(result).isNotNull();
-		assertThat(result.getName()).isEqualTo(categoryName);
+		assertThat(result.getName()).isEqualTo(CATEGORY_NAME);
 		assertThat(result.getId()).isEqualTo(category.getId());
 	}
 
 	@Test
-	public void test_findAll_shouldReturnListOfProducts() {
-		Category category1 = new Category("category");
-		Category category2 = new Category("category2");
+	public void test_findAll_shouldReturnListOfCategories() {
+		Category category1 = new Category(CATEGORY_NAME);
+		Category category2 = new Category(CATEGORY_NEW_NAME);
 
 		transaction.begin();
 		entityManager.persist(category1);

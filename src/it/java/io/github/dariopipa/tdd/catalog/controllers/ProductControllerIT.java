@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -35,6 +36,13 @@ import jakarta.persistence.Persistence;
 
 public class ProductControllerIT {
 
+	private static final String PRODUCT_NAME = "iphone";
+	private static final String PRODUCT_UPDATED_NAME = "iphone-15";
+	private static final String CATEGORY_NAME = "tech";
+
+	private static final BigDecimal PRODUCT_PRICE = BigDecimal.valueOf(100);
+	private static final BigDecimal PRODUCT_UPDATED_PRICE = BigDecimal.valueOf(129);
+
 	@SuppressWarnings("resource")
 	@ClassRule
 	public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
@@ -50,13 +58,12 @@ public class ProductControllerIT {
 	private CategoryRepository categoryRepository;
 	private CategoryService categoryService;
 	private CategoryController categoryController;
+	private AutoCloseable closeable;
 
 	@Mock
 	private CategoryView categoryView;
 	@Mock
 	private ProductView productView;
-
-	private BigDecimal price = BigDecimal.valueOf(100);
 
 	@BeforeClass
 	public static void beforeAll() {
@@ -74,7 +81,7 @@ public class ProductControllerIT {
 
 	@Before
 	public void setUp() {
-		MockitoAnnotations.openMocks(this);
+		closeable = MockitoAnnotations.openMocks(this);
 
 		// this will make sure that the db is empty every time
 		EntityManager tempEm = emf.createEntityManager();
@@ -96,21 +103,26 @@ public class ProductControllerIT {
 		categoryController = new CategoryController(categoryService, categoryView);
 	}
 
+	@After
+	public void tearDown() throws Exception {
+		closeable.close();
+		em.close();
+	}
+
 	@Test
 	public void shouldSaveProductInDatabase_whenControllerCreatesProductIT() {
-		String categoryName = "tech";
-		categoryController.create(categoryName);
+		categoryController.create(CATEGORY_NAME);
 
-		Category savedCategory = categoryRepository.findByName(categoryName);
+		Category savedCategory = categoryRepository.findByName(CATEGORY_NAME);
 		assertThat(savedCategory).isNotNull();
-		assertThat(savedCategory.getName()).isEqualTo(categoryName);
+		assertThat(savedCategory.getName()).isEqualTo(CATEGORY_NAME);
 
-		productController.create("iphone", price, savedCategory.getId());
+		productController.create("iphone", PRODUCT_PRICE, savedCategory.getId());
 
 		Product savedProduct = productRepository.findByName("iphone");
 		assertThat(savedProduct).isNotNull();
 		assertThat(savedProduct.getName()).isEqualTo("iphone");
-		assertThat(savedProduct.getPrice()).isEqualByComparingTo(price);
+		assertThat(savedProduct.getPrice()).isEqualByComparingTo(PRODUCT_PRICE);
 		assertThat(savedProduct.getCategory().getId()).isEqualTo(savedCategory.getId());
 
 		verify(productView).addedProduct(savedProduct);
@@ -118,14 +130,13 @@ public class ProductControllerIT {
 
 	@Test
 	public void shouldReturnAllProductsFromDB_whenControllerCallsFindAllIT() {
-		String categoryName = "integration-tech";
-		categoryController.create(categoryName);
+		categoryController.create(CATEGORY_NAME);
 
-		Category exisitingCategory = categoryRepository.findByName(categoryName);
+		Category exisitingCategory = categoryRepository.findByName(CATEGORY_NAME);
 		assertThat(exisitingCategory).isNotNull();
 
-		productController.create("iphone", price, exisitingCategory.getId());
-		productController.create("pc", price, exisitingCategory.getId());
+		productController.create(PRODUCT_NAME, PRODUCT_PRICE, exisitingCategory.getId());
+		productController.create(PRODUCT_UPDATED_NAME, PRODUCT_PRICE, exisitingCategory.getId());
 
 		productController.findAll();
 		List<Product> products = productService.findAll();
@@ -136,17 +147,15 @@ public class ProductControllerIT {
 
 	@Test
 	public void shouldDeleteProductInDatabase_whenControllerDeletesProductIT() {
-		String categoryName = "category";
-		categoryController.create(categoryName);
-		Category exisitingCategory = categoryRepository.findByName(categoryName);
+		categoryController.create(CATEGORY_NAME);
+		Category exisitingCategory = categoryRepository.findByName(CATEGORY_NAME);
 
-		String productName = "product to delete";
-		productController.create(productName, price, exisitingCategory.getId());
+		productController.create(PRODUCT_NAME, PRODUCT_PRICE, exisitingCategory.getId());
 
-		Product beforeDelete = productRepository.findByName(productName);
+		Product beforeDelete = productRepository.findByName(PRODUCT_NAME);
 
 		assertThat(beforeDelete).isNotNull();
-		assertThat(beforeDelete.getName()).isEqualTo(productName);
+		assertThat(beforeDelete.getName()).isEqualTo(PRODUCT_NAME);
 
 		Long id = beforeDelete.getId();
 		productController.delete(id);
@@ -157,28 +166,23 @@ public class ProductControllerIT {
 
 	@Test
 	public void shouldUpdateProductInDatabase_whenControllerUpdatesProductIT() {
-		String categoryName = "tech";
-		categoryController.create(categoryName);
-		Category existingCategory = categoryRepository.findByName(categoryName);
+		categoryController.create(CATEGORY_NAME);
+		Category existingCategory = categoryRepository.findByName(CATEGORY_NAME);
 
-		String name = "iphone";
-		productController.create("iphone", price, existingCategory.getId());
+		productController.create(PRODUCT_NAME, PRODUCT_PRICE, existingCategory.getId());
 
-		Product beforeUpdate = productRepository.findByName(name);
+		Product beforeUpdate = productRepository.findByName(PRODUCT_NAME);
 		assertThat(beforeUpdate).isNotNull();
-		assertThat(beforeUpdate.getName()).isEqualTo(name);
+		assertThat(beforeUpdate.getName()).isEqualTo(PRODUCT_NAME);
 
 		Long id = beforeUpdate.getId();
-		String updatedName = "iphone-15";
-		BigDecimal updatedPrice = BigDecimal.valueOf(129);
-
-		productController.update(id, updatedName, updatedPrice, existingCategory.getId());
+		productController.update(id, PRODUCT_UPDATED_NAME, PRODUCT_UPDATED_PRICE, existingCategory.getId());
 
 		Product updatedProduct = productService.findById(id);
 		assertThat(updatedProduct).isNotNull();
 		assertThat(updatedProduct.getId()).isEqualTo(id);
-		assertThat(updatedProduct.getName()).isEqualTo(updatedName);
-		assertThat(updatedProduct.getPrice()).isEqualByComparingTo(updatedPrice);
+		assertThat(updatedProduct.getName()).isEqualTo(PRODUCT_UPDATED_NAME);
+		assertThat(updatedProduct.getPrice()).isEqualByComparingTo(PRODUCT_UPDATED_PRICE);
 		assertThat(updatedProduct.getCategory().getId()).isEqualTo(existingCategory.getId());
 
 		verify(productView).updateProduct(updatedProduct);

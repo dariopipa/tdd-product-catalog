@@ -3,6 +3,7 @@ package io.github.dariopipa.tdd.catalog.transactionManager;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -14,21 +15,31 @@ import jakarta.persistence.Persistence;
 
 public class JPATransactionManagerTest {
 
+	private static final String PU_NAME = "product-catalog-IM-PU";
+	private static final String CATEGORY_NAME = "new category";
+	private static final String CATEGORY_UPDATED_NAME = "new name";
+
 	private JPATransactionManager jpaTransactionManager;
 	private EntityManagerFactory entityManagerFactory;
 	private EntityManager entityManager;
 
 	@Before
 	public void setup() {
-		entityManagerFactory = Persistence.createEntityManagerFactory("product-catalog-IM-PU");
+		entityManagerFactory = Persistence.createEntityManagerFactory(PU_NAME);
 		entityManager = entityManagerFactory.createEntityManager();
 
 		jpaTransactionManager = new JPATransactionManager(entityManager);
 	}
 
+	@After
+	public void tearDown() {
+		entityManager.close();
+		entityManagerFactory.close();
+	}
+
 	@Test
 	public void test_doInTransaction_shouldSucesfullySaveAndReturnTheResult() {
-		Category category = new Category("new category");
+		Category category = new Category(CATEGORY_NAME);
 
 		Long result = jpaTransactionManager.doInTransaction(() -> {
 			entityManager.persist(category);
@@ -41,13 +52,13 @@ public class JPATransactionManagerTest {
 		Category foundCategory = verifyEntityManager.find(Category.class, result);
 
 		assertThat(foundCategory).isNotNull();
-		assertThat(foundCategory.getName()).isEqualTo("new category");
+		assertThat(foundCategory.getName()).isEqualTo(CATEGORY_NAME);
 		assertThat(entityManager.getTransaction().isActive()).isFalse();
 	}
 
 	@Test
 	public void test_doInTransaction_withRuntimeException_shouldRollbackTransaction() {
-		Category existingCategory = new Category("existing category");
+		Category existingCategory = new Category(CATEGORY_NAME);
 		EntityManager setupEM = entityManagerFactory.createEntityManager();
 		setupEM.getTransaction().begin();
 		setupEM.persist(existingCategory);
@@ -59,7 +70,7 @@ public class JPATransactionManagerTest {
 		assertThatThrownBy(() -> {
 			jpaTransactionManager.doInTransaction(() -> {
 				Category categoryToUpdate = entityManager.find(Category.class, existingCategoryId);
-				categoryToUpdate.setName("new name");
+				categoryToUpdate.setName(CATEGORY_UPDATED_NAME);
 
 				throw new RuntimeException("Persistence failed.");
 			});
@@ -69,13 +80,13 @@ public class JPATransactionManagerTest {
 		Category foundCategory = verifyEntityManager.find(Category.class, existingCategoryId);
 
 		assertThat(foundCategory).isNotNull();
-		assertThat(foundCategory.getName()).isEqualTo("existing category");
+		assertThat(foundCategory.getName()).isEqualTo(CATEGORY_NAME);
 		assertThat(entityManager.getTransaction().isActive()).isFalse();
 	}
 
 	@Test
 	public void test_doInTransaction_withException_shouldRollbackTransaction() {
-		Category existingCategory = new Category("existing category");
+		Category existingCategory = new Category(CATEGORY_NAME);
 		EntityManager setupEM = entityManagerFactory.createEntityManager();
 		setupEM.getTransaction().begin();
 		setupEM.persist(existingCategory);
@@ -87,9 +98,9 @@ public class JPATransactionManagerTest {
 		assertThatThrownBy(() -> {
 			jpaTransactionManager.doInTransaction(() -> {
 				Category categoryToUpdate = entityManager.find(Category.class, existingCategoryId);
-				categoryToUpdate.setName("new name");
+				categoryToUpdate.setName(CATEGORY_UPDATED_NAME);
 
-				throw new Exception("Persistence failed.");
+				throw new Exception("");
 			});
 		}).isInstanceOf(Exception.class);
 
@@ -97,7 +108,7 @@ public class JPATransactionManagerTest {
 		Category foundCategory = verifyEntityManager.find(Category.class, existingCategoryId);
 
 		assertThat(foundCategory).isNotNull();
-		assertThat(foundCategory.getName()).isEqualTo("existing category");
+		assertThat(foundCategory.getName()).isEqualTo(CATEGORY_NAME);
 		assertThat(entityManager.getTransaction().isActive()).isFalse();
 	}
 

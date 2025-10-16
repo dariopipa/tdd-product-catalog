@@ -33,6 +33,17 @@ import jakarta.persistence.Persistence;
 @RunWith(GUITestRunner.class)
 public class CatalogSwingViewIT extends AssertJSwingJUnitTestCase {
 
+	private static final String CATEGORY_NAME = "tech";
+	private static final String CATEGORY_UPDATE_NAME = "books";
+
+	private static final String PRODUCT_NAME = "laptop";
+	private static final String PRODUCT_UPDATED_NAME = "iphone";
+
+	private static final BigDecimal PRODUCT_PRICE = BigDecimal.valueOf(100);
+	private static final BigDecimal PRODUCT_UPDATED_PRICE = BigDecimal.valueOf(120);
+
+	private static final Long MISSING_ID = 999L;
+
 	private static EntityManagerFactory emf;
 	private EntityManager em;
 	private JpaCategoryRepositoryImpl categoryRepository;
@@ -100,29 +111,29 @@ public class CatalogSwingViewIT extends AssertJSwingJUnitTestCase {
 	@Test
 	@GUITest
 	public void test_addCategoryIT() {
-		frameFixture.textBox("newName").enterText("tech");
+		frameFixture.textBox("newName").enterText(CATEGORY_NAME);
 		frameFixture.button("addCategoryButton").click();
 		frameFixture.table("categoryTable").requireRowCount(1);
 
 		String[][] tableContent = frameFixture.table("categoryTable").contents();
-		assertThat(categoryRepository.findByName("tech").getName()).isEqualTo("tech");
-		assertThat(tableContent[0][1]).isEqualTo("tech");
+		assertThat(categoryRepository.findByName(CATEGORY_NAME).getName()).isEqualTo(CATEGORY_NAME);
+		assertThat(tableContent[0][1]).isEqualTo(CATEGORY_NAME);
 	}
 
 	@Test
 	@GUITest
 	public void test_findAllCategoriesIT() {
-		GuiActionRunner.execute(() -> categoryController.create("tech"));
-		GuiActionRunner.execute(() -> categoryController.create("books"));
+		GuiActionRunner.execute(() -> categoryController.create(CATEGORY_NAME));
+		GuiActionRunner.execute(() -> categoryController.create(CATEGORY_UPDATE_NAME));
 
 		frameFixture.table("categoryTable").requireRowCount(2);
 		String[][] tableContent = frameFixture.table("categoryTable").contents();
 
-		assertThat(categoryRepository.findByName("tech")).isNotNull();
-		assertThat(categoryRepository.findByName("books")).isNotNull();
+		assertThat(categoryRepository.findByName(CATEGORY_NAME)).isNotNull();
+		assertThat(categoryRepository.findByName(CATEGORY_UPDATE_NAME)).isNotNull();
 
-		assertThat(tableContent[0][1]).isEqualTo("tech");
-		assertThat(tableContent[1][1]).isEqualTo("books");
+		assertThat(tableContent[0][1]).isEqualTo(CATEGORY_NAME);
+		assertThat(tableContent[1][1]).isEqualTo(CATEGORY_UPDATE_NAME);
 	}
 
 	@Test
@@ -139,66 +150,66 @@ public class CatalogSwingViewIT extends AssertJSwingJUnitTestCase {
 	@Test
 	@GUITest
 	public void test_deleteCategoryThatDoesNotExist_shouldShowErrorIT() {
-		GuiActionRunner.execute(() -> categoryController.delete(999L));
+		GuiActionRunner.execute(() -> categoryController.delete(MISSING_ID));
 
-		frameFixture.label("errorLabel").requireText("category with id:999 not found");
+		frameFixture.label("errorLabel").requireText("category with id:" + MISSING_ID + " not found");
 	}
 
 	@Test
 	@GUITest
 	public void test_updateCategoryThatExistsIT() {
-		GuiActionRunner.execute(() -> categoryController.create("tech"));
+		GuiActionRunner.execute(() -> categoryController.create(CATEGORY_NAME));
 
 		frameFixture.table("categoryTable").selectRows(0);
 
-		frameFixture.textBox("newName").enterText("books");
+		frameFixture.textBox("newName").enterText(CATEGORY_UPDATE_NAME);
 		frameFixture.button("updateCategoryButton").click();
 
 		GuiActionRunner.execute(() -> categoryController.findAll());
 
 		String[][] tableContent = frameFixture.table("categoryTable").contents();
-		assertThat(tableContent[0][1]).isEqualTo("books");
+		assertThat(tableContent[0][1]).isEqualTo(CATEGORY_UPDATE_NAME);
 	}
 
 	@Test
 	@GUITest
 	public void test_updateCategoryThatDoesNotExist_shouldShowErrorIT() {
-		GuiActionRunner.execute(() -> categoryController.update(999L, "book"));
+		GuiActionRunner.execute(() -> categoryController.update(MISSING_ID, CATEGORY_UPDATE_NAME));
 
-		frameFixture.label("errorLabel").requireText("category with id:999 not found");
+		frameFixture.label("errorLabel").requireText("category with id:" + MISSING_ID + " not found");
 	}
 
 	@Test
 	@GUITest
 	public void test_addProductIT() {
-		GuiActionRunner.execute(() -> categoryController.create("tech"));
+		GuiActionRunner.execute(() -> categoryController.create(CATEGORY_NAME));
 		GuiActionRunner.execute(() -> categoryController.findAll());
 
-		frameFixture.textBox("productNewName").enterText("laptop");
-		frameFixture.textBox("productNewPrice").enterText("1000");
+		frameFixture.textBox("productNewName").enterText(PRODUCT_NAME);
+		frameFixture.textBox("productNewPrice").enterText(PRODUCT_PRICE.toString());
 		frameFixture.comboBox("productCategorySelectBox").selectItem(0);
 		frameFixture.button("addProductButton").click();
 
 		String[][] tableContent = frameFixture.table("productTable").contents();
-		assertThat(tableContent[0][1]).isEqualTo("laptop");
-		assertThat(tableContent[0][2]).isEqualTo("1000");
-		assertThat(tableContent[0][3]).contains("tech");
+		assertThat(tableContent[0][1]).isEqualTo(PRODUCT_NAME);
+		assertThat(tableContent[0][2]).isEqualTo(PRODUCT_PRICE.toString());
+		assertThat(tableContent[0][3]).contains(CATEGORY_NAME);
 	}
 
 	@Test
 	@GUITest
 	public void test_findAllProductsIT() {
 		GuiActionRunner.execute(() -> {
-			categoryController.create("tech");
-			categoryController.create("books");
+			categoryController.create(CATEGORY_NAME);
+			categoryController.create(CATEGORY_UPDATE_NAME);
 		});
 
-		Long techId = categoryRepository.findByName("tech").getId();
-		Long booksId = categoryRepository.findByName("books").getId();
+		Long techId = categoryRepository.findByName(CATEGORY_NAME).getId();
+		Long categoryId = categoryRepository.findByName(CATEGORY_UPDATE_NAME).getId();
 
 		GuiActionRunner.execute(() -> {
-			productController.create("laptop", new BigDecimal("1000"), techId);
-			productController.create("novel", new BigDecimal("15"), booksId);
+			productController.create(PRODUCT_NAME, PRODUCT_PRICE, techId);
+			productController.create(PRODUCT_UPDATED_NAME, PRODUCT_UPDATED_PRICE, categoryId);
 		});
 
 		GuiActionRunner.execute(() -> productController.findAll());
@@ -206,52 +217,53 @@ public class CatalogSwingViewIT extends AssertJSwingJUnitTestCase {
 		frameFixture.table("productTable").requireRowCount(2);
 		String[][] tableContent = frameFixture.table("productTable").contents();
 
-		assertThat(tableContent[0][1]).isEqualTo("laptop");
-		assertThat(tableContent[0][2]).isEqualTo("1000");
-		assertThat(tableContent[0][3]).contains("tech");
+		assertThat(tableContent[0][1]).isEqualTo(PRODUCT_NAME);
+		assertThat(tableContent[0][2]).isEqualTo(PRODUCT_PRICE.toString());
+		assertThat(tableContent[0][3]).contains(CATEGORY_NAME);
 
-		assertThat(tableContent[1][1]).isEqualTo("novel");
-		assertThat(tableContent[1][2]).isEqualTo("15");
-		assertThat(tableContent[1][3]).contains("books");
+		assertThat(tableContent[1][1]).isEqualTo(PRODUCT_UPDATED_NAME);
+		assertThat(tableContent[1][2]).isEqualTo(PRODUCT_UPDATED_PRICE.toString());
+		assertThat(tableContent[1][3]).contains(CATEGORY_UPDATE_NAME);
 	}
 
 	@Test
 	@GUITest
 	public void test_updateProductThatExistsIT() {
 		GuiActionRunner.execute(() -> {
-			categoryController.create("tech");
+			categoryController.create(CATEGORY_NAME);
 			categoryController.findAll();
 		});
-		Long techId = categoryRepository.findByName("tech").getId();
+		Long techId = categoryRepository.findByName(CATEGORY_NAME).getId();
 
-		GuiActionRunner.execute(() -> {
-			productController.create("laptop", new BigDecimal("1000"), techId);
-		});
-
+		GuiActionRunner.execute(() -> productController.create(PRODUCT_NAME, PRODUCT_PRICE, techId));
 		GuiActionRunner.execute(() -> productController.findAll());
 
 		frameFixture.table("productTable").selectRows(0);
-		frameFixture.textBox("productNewName").setText("iphone");
-		frameFixture.textBox("productNewPrice").setText("1200");
+
+		frameFixture.comboBox("productCategorySelectBox").selectItem(0);
+		frameFixture.textBox("productNewName").enterText(PRODUCT_UPDATED_NAME);
+		frameFixture.textBox("productNewPrice").enterText(PRODUCT_UPDATED_PRICE.toString());
 		frameFixture.button("updateProductButton").click();
 
 		GuiActionRunner.execute(() -> productController.findAll());
 
 		String[][] productTable = frameFixture.table("productTable").contents();
-		assertThat(productTable[0][1]).isEqualTo("iphone");
-		assertThat(productTable[0][2]).isEqualTo("1200");
-		assertThat(productTable[0][3]).contains("tech");
+		assertThat(productTable[0][1]).isEqualTo(PRODUCT_UPDATED_NAME);
+		assertThat(productTable[0][2]).isEqualTo(PRODUCT_UPDATED_PRICE.toString());
+		assertThat(productTable[0][3]).contains(CATEGORY_NAME);
 	}
 
 	@Test
 	@GUITest
 	public void test_deleteProductIT() {
 		GuiActionRunner.execute(() -> {
-			categoryController.create("tech");
+			categoryController.create(CATEGORY_NAME);
 		});
 
-		Long techId = categoryRepository.findByName("tech").getId();
-		productController.create("laptop", new BigDecimal("1000"), techId);
+		Long techId = categoryRepository.findByName(CATEGORY_NAME).getId();
+		GuiActionRunner.execute(() -> {
+			productController.create(PRODUCT_NAME, PRODUCT_PRICE, techId);
+		});
 
 		GuiActionRunner.execute(() -> productController.findAll());
 
@@ -264,34 +276,36 @@ public class CatalogSwingViewIT extends AssertJSwingJUnitTestCase {
 	@Test
 	@GUITest
 	public void test_deleteProductThatDoesNotExist_shouldShowErrorIT() {
-		GuiActionRunner.execute(() -> productController.delete(999L));
-		frameFixture.label("errorLabel").requireText("product with id: 999 not found");
+		GuiActionRunner.execute(() -> productController.delete(MISSING_ID));
+		frameFixture.label("errorLabel").requireText("product with id: " + MISSING_ID + " not found");
 	}
 
 	@Test
 	@GUITest
 	public void test_updateProductThatDoesNotExist_shouldShowErrorIT() {
 		GuiActionRunner.execute(() -> {
-			categoryController.create("tech");
+			categoryController.create(CATEGORY_NAME);
 		});
 
-		Long techId = categoryRepository.findByName("tech").getId();
-		productController.update(999L, "updated", new BigDecimal("1"), techId);
+		Long techId = categoryRepository.findByName(CATEGORY_NAME).getId();
+		GuiActionRunner.execute(() -> {
+			productController.update(MISSING_ID, PRODUCT_UPDATED_NAME, PRODUCT_UPDATED_PRICE, techId);
+		});
 
-		frameFixture.label("errorLabel").requireText("Invalid input: product with id: 999 not found");
+		frameFixture.label("errorLabel").requireText("Invalid input: product with id: " + MISSING_ID + " not found");
 	}
 
 	@Test
 	@GUITest
 	public void test_deleteCategoryThatIsUsedByProducts_shouldShowErrorIt() {
 		GuiActionRunner.execute(() -> {
-			categoryController.create("tech");
+			categoryController.create(CATEGORY_NAME);
 		});
 
-		Long categoryId = categoryRepository.findByName("tech").getId();
+		Long categoryId = categoryRepository.findByName(CATEGORY_NAME).getId();
 		GuiActionRunner.execute(() -> {
-			productController.create("laptop", new BigDecimal("1000"), categoryId);
-			productController.create("novel", new BigDecimal("15"), categoryId);
+			productController.create(PRODUCT_NAME, PRODUCT_PRICE, categoryId);
+			productController.create(PRODUCT_UPDATED_NAME, PRODUCT_UPDATED_PRICE, categoryId);
 		});
 
 		frameFixture.table("categoryTable").selectRows(0);

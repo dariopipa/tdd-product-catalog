@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -24,172 +25,178 @@ import io.github.dariopipa.tdd.catalog.views.CategoryView;
 
 public class CategoryControllerTest {
 
+	private static final long EXISTING_ID = 1L;
+	private static final long MISSING_ID = 999L;
+
+	private static final String CATEGORY_NAME = "new category";
+	private static final String CATEGORY_UPDATED_NAME = "updated category name";
+	private static final String BLANK_NAME = "     ";
+	private static final String BLANK_TABS_NAME = "      \t\t\t\t         ";
+
 	private CategoryController categoryController;
 
 	@Mock
 	private CategoryService categoryService;
+
 	@Mock
 	private CategoryView categoryView;
 
+	private AutoCloseable closeable;
+
 	@Before
 	public void setup() {
-		MockitoAnnotations.openMocks(this);
-
+		closeable = MockitoAnnotations.openMocks(this);
 		categoryController = new CategoryController(categoryService, categoryView);
+	}
+
+	@After
+	public void tearDown() throws Exception {
+		closeable.close();
 	}
 
 	@Test
 	public void test_createNewCategory_shouldShowTheNewCreatedCategory() {
-		String name = "new category";
-		Category createdCategory = new Category(name);
+		Category createdCategory = new Category(CATEGORY_NAME);
 
-		when(categoryService.createCategory(name)).thenReturn(1L);
-		when(categoryService.findById(1L)).thenReturn(createdCategory);
+		when(categoryService.createCategory(CATEGORY_NAME)).thenReturn(EXISTING_ID);
+		when(categoryService.findById(EXISTING_ID)).thenReturn(createdCategory);
 
-		categoryController.create(name);
+		categoryController.create(CATEGORY_NAME);
 
-		verify(categoryService).createCategory(name);
-		verify(categoryService).findById(1L);
+		verify(categoryService).createCategory(CATEGORY_NAME);
+		verify(categoryService).findById(EXISTING_ID);
 		verify(categoryView).addedCategory(createdCategory);
 		verifyNoMoreInteractions(categoryService, categoryView);
 	}
 
 	@Test
 	public void test_createNewCategory_withBlankName_shouldThrowException() {
-		String blankName = "     ";
-
-		when(categoryService.createCategory(blankName))
+		when(categoryService.createCategory(BLANK_NAME))
 				.thenThrow(new IllegalArgumentException("name must be provided"));
 
-		categoryController.create(blankName);
+		categoryController.create(BLANK_NAME);
 
-		verify(categoryService).createCategory(blankName);
+		verify(categoryService).createCategory(BLANK_NAME);
 		verify(categoryView).showError("Invalid input: name must be provided");
 		verifyNoMoreInteractions(categoryService, categoryView);
 	}
 
 	@Test
 	public void test_createNewCategory_withEmptyName_shouldThrowException() {
-		String nullName = null;
+		when(categoryService.createCategory(null)).thenThrow(new IllegalArgumentException("name must be provided"));
 
-		when(categoryService.createCategory(nullName)).thenThrow(new IllegalArgumentException("name must be provided"));
+		categoryController.create(null);
 
-		categoryController.create(nullName);
 		InOrder inOrder = inOrder(categoryService, categoryView);
-		inOrder.verify(categoryService).createCategory(nullName);
+		inOrder.verify(categoryService).createCategory(null);
 		inOrder.verify(categoryView).showError("Invalid input: name must be provided");
 		verifyNoMoreInteractions(categoryService, categoryView);
 	}
 
 	@Test
 	public void test_createNewCategory_withExistingName_shouldThrowException() {
-		String name = "new name";
+		when(categoryService.createCategory(CATEGORY_NAME)).thenThrow(new CategoryNameAlreadyExistsExcpetion());
 
-		when(categoryService.createCategory(name)).thenThrow(new CategoryNameAlreadyExistsExcpetion());
-
-		categoryController.create(name);
+		categoryController.create(CATEGORY_NAME);
 
 		InOrder inOrder = inOrder(categoryService, categoryView);
-		inOrder.verify(categoryService).createCategory(name);
+		inOrder.verify(categoryService).createCategory(CATEGORY_NAME);
 		inOrder.verify(categoryView).showError("Category name already exists");
 		verifyNoMoreInteractions(categoryService, categoryView);
 	}
 
 	@Test
 	public void test_deleteCategory_whenCategoryExists() {
-		Category existingCategory = new Category("Electronics");
+		Category existingCategory = new Category(CATEGORY_NAME);
 
-		when(categoryService.findById(1L)).thenReturn(existingCategory);
-		when(categoryService.delete(1L)).thenReturn("Deleted");
+		when(categoryService.findById(EXISTING_ID)).thenReturn(existingCategory);
+		when(categoryService.delete(EXISTING_ID)).thenReturn("Deleted");
 
-		categoryController.delete(1L);
+		categoryController.delete(EXISTING_ID);
 
 		InOrder inOrder = inOrder(categoryService, categoryView);
-		inOrder.verify(categoryService).findById(1L);
-		inOrder.verify(categoryService).delete(1L);
+		inOrder.verify(categoryService).findById(EXISTING_ID);
+		inOrder.verify(categoryService).delete(EXISTING_ID);
 		inOrder.verify(categoryView).deletedCategory(existingCategory);
 	}
 
 	@Test
 	public void test_deleteCategory_whenCategoryDoesNotExists() {
-		when(categoryService.findById(999L))
-				.thenThrow(new EntityNotFoundException("category with id:" + 999L + "not found"));
+		when(categoryService.findById(MISSING_ID))
+				.thenThrow(new EntityNotFoundException("category with id:" + MISSING_ID + "not found"));
 
-		categoryController.delete(999L);
+		categoryController.delete(MISSING_ID);
 
 		InOrder inOrder = inOrder(categoryService, categoryView);
-		inOrder.verify(categoryService).findById(999L);
-		inOrder.verify(categoryView).showError("category with id:" + 999L + "not found");
+		inOrder.verify(categoryService).findById(MISSING_ID);
+		inOrder.verify(categoryView).showError("category with id:" + MISSING_ID + "not found");
 	}
 
 	@Test
 	public void test_updateCategory_shouldReturnUpdatedCategory() {
-		String newName = "updated category name";
-		Category updatedCategory = new Category(newName);
+		Category updatedCategory = new Category(CATEGORY_UPDATED_NAME);
 
-		when(categoryService.update(1L, newName)).thenReturn(updatedCategory);
+		when(categoryService.update(EXISTING_ID, CATEGORY_UPDATED_NAME)).thenReturn(updatedCategory);
 
-		categoryController.update(1L, newName);
+		categoryController.update(EXISTING_ID, CATEGORY_UPDATED_NAME);
 
 		InOrder inOrder = inOrder(categoryService, categoryView);
-		inOrder.verify(categoryService).update(1L, newName);
+		inOrder.verify(categoryService).update(EXISTING_ID, CATEGORY_UPDATED_NAME);
 		inOrder.verify(categoryView).updateCategory(updatedCategory);
 	}
 
 	@Test
-	public void test_updateCategory_withNullName_shouldThrowExcpetion() {
-		String nullName = null;
+	public void test_updateCategory_withNULL_NAME_shouldThrowExcpetion() {
+		when(categoryService.update(EXISTING_ID, null))
+				.thenThrow(new IllegalArgumentException("name must be provided"));
 
-		when(categoryService.update(1L, nullName)).thenThrow(new IllegalArgumentException("name must be provided"));
-
-		categoryController.update(1L, nullName);
+		categoryController.update(EXISTING_ID, null);
 
 		InOrder inOrder = inOrder(categoryService, categoryView);
-		inOrder.verify(categoryService).update(1L, nullName);
+		inOrder.verify(categoryService).update(EXISTING_ID, null);
 		inOrder.verify(categoryView).showError("Invalid input: name must be provided");
 	}
 
 	@Test
 	public void test_updateCategory_withBlankName_shouldThrowExcpetion() {
-		String blankName = "      \t\t\t\t         ";
+		when(categoryService.update(EXISTING_ID, BLANK_TABS_NAME))
+				.thenThrow(new IllegalArgumentException("name must be provided"));
 
-		when(categoryService.update(1L, blankName)).thenThrow(new IllegalArgumentException("name must be provided"));
-
-		categoryController.update(1L, blankName);
+		categoryController.update(EXISTING_ID, BLANK_TABS_NAME);
 
 		InOrder inOrder = inOrder(categoryService, categoryView);
-		inOrder.verify(categoryService).update(1L, blankName);
+		inOrder.verify(categoryService).update(EXISTING_ID, BLANK_TABS_NAME);
 		inOrder.verify(categoryView).showError("Invalid input: name must be provided");
 	}
 
 	@Test
 	public void test_updateCategory_withExistingName_shouldThrowExcpetion() {
-		when(categoryService.update(1L, "electronics")).thenThrow(new CategoryNameAlreadyExistsExcpetion());
+		when(categoryService.update(EXISTING_ID, CATEGORY_NAME)).thenThrow(new CategoryNameAlreadyExistsExcpetion());
 
-		categoryController.update(1L, "electronics");
+		categoryController.update(EXISTING_ID, CATEGORY_NAME);
 
 		InOrder inOrder = inOrder(categoryService, categoryView);
-		inOrder.verify(categoryService).update(1L, "electronics");
+		inOrder.verify(categoryService).update(EXISTING_ID, CATEGORY_NAME);
 		inOrder.verify(categoryView).showError("Category name already exists");
 		verifyNoMoreInteractions(categoryService);
 	}
 
 	@Test
 	public void test_updateCategory_whenCategoryDoesNotExists_shouldThrowExcpetion() {
-		when(categoryService.update(999L, "books"))
-				.thenThrow(new EntityNotFoundException("category with id:" + 999L + " not found"));
+		when(categoryService.update(MISSING_ID, CATEGORY_UPDATED_NAME))
+				.thenThrow(new EntityNotFoundException("category with id:" + MISSING_ID + " not found"));
 
-		categoryController.update(999L, "books");
+		categoryController.update(MISSING_ID, CATEGORY_UPDATED_NAME);
 
 		InOrder inOrder = inOrder(categoryService, categoryView);
-		inOrder.verify(categoryService).update(999L, "books");
-		inOrder.verify(categoryView).showError("category with id:" + 999L + " not found");
+		inOrder.verify(categoryService).update(MISSING_ID, CATEGORY_UPDATED_NAME);
+		inOrder.verify(categoryView).showError("category with id:" + MISSING_ID + " not found");
 	}
 
 	@Test
 	public void test_findAll_shouldReturnListOfCateegories() {
-		List<Category> categories = Arrays.asList(new Category("electronics"), new Category("tech"),
-				new Category("categories"));
+		List<Category> categories = Arrays.asList(new Category(CATEGORY_NAME), new Category("tech"),
+				new Category("books"));
 
 		when(categoryService.findAll()).thenReturn(categories);
 
@@ -215,17 +222,16 @@ public class CategoryControllerTest {
 
 	@Test
 	public void test_deleteCategoryInUseByProducts_shouldThrowExcpetion() {
-		Category existingCategory = new Category("Electronics");
+		Category existingCategory = new Category(CATEGORY_NAME);
 
-		when(categoryService.findById(1L)).thenReturn(existingCategory);
-		when(categoryService.delete(1L)).thenThrow(new CategoryInUseException());
+		when(categoryService.findById(EXISTING_ID)).thenReturn(existingCategory);
+		when(categoryService.delete(EXISTING_ID)).thenThrow(new CategoryInUseException());
 
-		categoryController.delete(1L);
+		categoryController.delete(EXISTING_ID);
 
 		InOrder inOrder = inOrder(categoryService, categoryView);
-		inOrder.verify(categoryService).findById(1L);
-		inOrder.verify(categoryService).delete(1L);
+		inOrder.verify(categoryService).findById(EXISTING_ID);
+		inOrder.verify(categoryService).delete(EXISTING_ID);
 		inOrder.verify(categoryView).showError("Category in use by existing products");
 	}
-
 }
