@@ -25,7 +25,7 @@ import io.github.dariopipa.tdd.catalog.repository.JpaCategoryRepositoryImpl;
 import io.github.dariopipa.tdd.catalog.repository.JpaProductRepositoryImpl;
 import io.github.dariopipa.tdd.catalog.service.CategoryService;
 import io.github.dariopipa.tdd.catalog.service.ProductService;
-import io.github.dariopipa.tdd.catalog.transactionManger.JPATransactionManager;
+import io.github.dariopipa.tdd.catalog.transactionmanger.JPATransactionManager;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;

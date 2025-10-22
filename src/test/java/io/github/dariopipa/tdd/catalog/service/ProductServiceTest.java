@@ -28,8 +28,8 @@ import io.github.dariopipa.tdd.catalog.entities.Product;
 import io.github.dariopipa.tdd.catalog.exceptions.EntityNotFoundException;
 import io.github.dariopipa.tdd.catalog.exceptions.ProductNameAlreadyExistsExcpetion;
 import io.github.dariopipa.tdd.catalog.repository.ProductRepository;
-import io.github.dariopipa.tdd.catalog.transactionManger.TransactionCode;
-import io.github.dariopipa.tdd.catalog.transactionManger.TransactionManager;
+import io.github.dariopipa.tdd.catalog.transactionmanger.TransactionCode;
+import io.github.dariopipa.tdd.catalog.transactionmanger.TransactionManager;
 
 public class ProductServiceTest {
 
@@ -252,7 +252,6 @@ public class ProductServiceTest {
 
 		List<Product> result = productService.findAll();
 
-		assertThat(result).isEqualTo(new ArrayList<Product>());
 		assertThat(result).isEmpty();
 
 		verify(transactionManager).doInTransaction(any());

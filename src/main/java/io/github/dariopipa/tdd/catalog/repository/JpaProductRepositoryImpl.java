@@ -24,7 +24,6 @@ public class JpaProductRepositoryImpl implements ProductRepository {
 	@Override
 	public void delete(Product product) {
 		entityManager.remove(product);
-		return;
 	}
 
 	@Override

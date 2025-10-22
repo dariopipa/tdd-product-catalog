@@ -24,7 +24,7 @@ import io.github.dariopipa.tdd.catalog.repository.JpaCategoryRepositoryImpl;
 import io.github.dariopipa.tdd.catalog.repository.JpaProductRepositoryImpl;
 import io.github.dariopipa.tdd.catalog.repository.ProductRepository;
 import io.github.dariopipa.tdd.catalog.service.CategoryService;
-import io.github.dariopipa.tdd.catalog.transactionManger.JPATransactionManager;
+import io.github.dariopipa.tdd.catalog.transactionmanger.JPATransactionManager;
 import io.github.dariopipa.tdd.catalog.views.CategoryView;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
@@ -100,7 +100,7 @@ public class CategoryControllerIT {
 		Category saved = categoryRepository.findByName(CATEGORY_NAME);
 
 		assertThat(saved).isNotNull();
-		assertThat(CATEGORY_NAME).isEqualTo(saved.getName());
+		assertThat(saved.getName()).isEqualTo(CATEGORY_NAME);
 		verify(categoryView).addedCategory(saved);
 	}
 

@@ -52,8 +52,6 @@ public class ProductController {
 			productView.updateProduct(updatedProduct);
 		} catch (ProductNameAlreadyExistsExcpetion e) {
 			productView.showError("Invalid input: Product name already exists");
-		} catch (IllegalArgumentException e) {
-			productView.showError("Invalid input: " + e.getMessage());
 		} catch (Exception e) {
 			productView.showError("Invalid input: " + e.getMessage());
 		}

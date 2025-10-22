@@ -8,7 +8,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import io.github.dariopipa.tdd.catalog.entities.Category;
-import io.github.dariopipa.tdd.catalog.transactionManger.JPATransactionManager;
+import io.github.dariopipa.tdd.catalog.exceptions.JPARepoException;
+import io.github.dariopipa.tdd.catalog.transactionmanger.JPATransactionManager;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
@@ -100,9 +101,9 @@ public class JPATransactionManagerTest {
 				Category categoryToUpdate = entityManager.find(Category.class, existingCategoryId);
 				categoryToUpdate.setName(CATEGORY_UPDATED_NAME);
 
-				throw new Exception("");
+				throw new JPARepoException("Persistence failed.");
 			});
-		}).isInstanceOf(Exception.class);
+		}).isInstanceOf(JPARepoException.class).hasMessage("Persistence failed.");
 
 		EntityManager verifyEntityManager = entityManagerFactory.createEntityManager();
 		Category foundCategory = verifyEntityManager.find(Category.class, existingCategoryId);
