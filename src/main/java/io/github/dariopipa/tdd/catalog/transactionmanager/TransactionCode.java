@@ -1,4 +1,4 @@
-package io.github.dariopipa.tdd.catalog.transactionmanger;
+package io.github.dariopipa.tdd.catalog.transactionmanager;
 
 import io.github.dariopipa.tdd.catalog.exceptions.JPARepoException;
 

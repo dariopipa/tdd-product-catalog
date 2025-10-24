@@ -9,7 +9,7 @@ import org.junit.Test;
 
 import io.github.dariopipa.tdd.catalog.entities.Category;
 import io.github.dariopipa.tdd.catalog.exceptions.JPARepoException;
-import io.github.dariopipa.tdd.catalog.transactionmanger.JPATransactionManager;
+import io.github.dariopipa.tdd.catalog.transactionmanager.JPATransactionManager;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;

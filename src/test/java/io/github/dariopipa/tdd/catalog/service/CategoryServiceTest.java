@@ -28,8 +28,8 @@ import io.github.dariopipa.tdd.catalog.exceptions.CategoryNameAlreadyExistsExcpe
 import io.github.dariopipa.tdd.catalog.exceptions.EntityNotFoundException;
 import io.github.dariopipa.tdd.catalog.repository.CategoryRepository;
 import io.github.dariopipa.tdd.catalog.repository.ProductRepository;
-import io.github.dariopipa.tdd.catalog.transactionmanger.TransactionCode;
-import io.github.dariopipa.tdd.catalog.transactionmanger.TransactionManager;
+import io.github.dariopipa.tdd.catalog.transactionmanager.TransactionCode;
+import io.github.dariopipa.tdd.catalog.transactionmanager.TransactionManager;
 
 public class CategoryServiceTest {
 
