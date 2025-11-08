@@ -238,7 +238,58 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 
 	@Test
 	@GUITest
-	public void test_updateAndDeleteButtonsProductAreActive_whenItemIsSelected() {
+	public void test_updateProductButtonIsActive_whenItemIsSelected_andPriceAndTextAreNotEmpty() {
+		Category category = new Category(CATEGORY_NAME);
+		category.setId(EXISTING_ID);
+
+		GuiActionRunner.execute(() -> {
+			@SuppressWarnings("unchecked")
+			JComboBox<Category> comboBox = frameFixture.comboBox("productCategorySelectBox").target();
+			comboBox.addItem(category);
+		});
+
+		GuiActionRunner.execute(() -> {
+			DefaultTableModel model = (DefaultTableModel) frameFixture.table("productTable").target().getModel();
+			model.addRow(new Object[] { EXISTING_ID, PRODUCT_NAME, EXISTING_ID, category });
+			model.addRow(new Object[] { EXISTING_ID_2, UPDATED_PRODUCT_NAME, EXISTING_ID, category });
+		});
+
+		frameFixture.textBox("productNewName").setText(PRODUCT_NAME);
+		frameFixture.textBox("productNewPrice").setText(PRICE_DEFAULT);
+		frameFixture.table("productTable").selectRows(0);
+
+		frameFixture.button("updateProductButton").requireEnabled();
+	}
+
+	@Test
+	@GUITest
+	public void test_updateProductButtonIsDisabled_whenItemIsSelected_andPriceIsInvalid_shouldShowError() {
+		Category category = new Category(CATEGORY_NAME);
+		category.setId(EXISTING_ID);
+
+		GuiActionRunner.execute(() -> {
+			@SuppressWarnings("unchecked")
+			JComboBox<Category> combo = frameFixture.comboBox("productCategorySelectBox").target();
+			combo.addItem(category);
+		});
+
+		GuiActionRunner.execute(() -> {
+			DefaultTableModel model = (DefaultTableModel) frameFixture.table("productTable").target().getModel();
+			model.addRow(new Object[] { EXISTING_ID, PRODUCT_NAME, EXISTING_ID, category });
+		});
+
+		frameFixture.table("productTable").selectRows(0);
+		frameFixture.textBox("productNewName").enterText(PRODUCT_NAME);
+		frameFixture.textBox("productNewPrice").enterText(PRICE_NEGATIVE);
+		frameFixture.comboBox("productCategorySelectBox").selectItem(0);
+
+		frameFixture.button("updateProductButton").requireDisabled();
+		frameFixture.label("errorLabel").requireText("Price must be an allowed number");
+	}
+
+	@Test
+	@GUITest
+	public void test_deleteProductButtonIsActive_whenItemIsSelected() {
 		Category category = new Category(CATEGORY_NAME);
 
 		GuiActionRunner.execute(() -> {
@@ -248,8 +299,6 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 		});
 
 		frameFixture.table("productTable").selectRows(0);
-
-		frameFixture.button("updateProductButton").requireDisabled();
 		frameFixture.button("deleteProductButton").requireEnabled();
 	}
 
@@ -257,6 +306,14 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 	@GUITest
 	public void test_updateButtonProductIsDisabled_whenItemIsSelectedAndPriceOrTextAreEmpty() {
 		Category category = new Category(CATEGORY_NAME);
+		Category category2 = new Category(UPDATED_CATEGORY_NAME);
+
+		GuiActionRunner.execute(() -> {
+			@SuppressWarnings("unchecked")
+			JComboBox<Category> combo = frameFixture.comboBox("productCategorySelectBox").target();
+			combo.addItem(category);
+			combo.addItem(category2);
+		});
 
 		GuiActionRunner.execute(() -> {
 			DefaultTableModel model = (DefaultTableModel) frameFixture.table("productTable").target().getModel();
@@ -265,6 +322,8 @@ public class CatalogSwingViewTest extends AssertJSwingJUnitTestCase {
 		});
 
 		frameFixture.table("productTable").selectRows(0);
+		frameFixture.textBox("productNewName").setText("");
+		frameFixture.comboBox("productCategorySelectBox").selectItem(1);
 
 		frameFixture.button("updateProductButton").requireDisabled();
 		frameFixture.button("deleteProductButton").requireEnabled();

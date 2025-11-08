@@ -127,6 +127,13 @@ public class JpaCategoryRepositoryImplTest {
 	}
 
 	@Test
+	public void test_findByNonExistentName_shouldReturnNull() {
+		Category result = jpaCategoryRepositoryImpl.findByName("does not exist");
+
+		assertThat(result).isNull();
+	}
+
+	@Test
 	public void test_findAll_shouldReturnListOfCategories() {
 		Category category1 = new Category(CATEGORY_NAME);
 		Category category2 = new Category(CATEGORY_NEW_NAME);
@@ -138,8 +145,7 @@ public class JpaCategoryRepositoryImplTest {
 
 		List<Category> result = jpaCategoryRepositoryImpl.findAll();
 
-		assertThat(result).hasSize(2);
-		assertThat(result).contains(category1, category2);
+		assertThat(result).hasSize(2).contains(category1, category2);
 	}
 
 }

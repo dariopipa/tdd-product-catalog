@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.swing.launcher.ApplicationLauncher.application;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.JFrame;
 
@@ -14,11 +16,18 @@ import org.assertj.swing.fixture.FrameFixture;
 import org.assertj.swing.fixture.JComboBoxFixture;
 import org.assertj.swing.junit.runner.GUITestRunner;
 import org.assertj.swing.junit.testcase.AssertJSwingJUnitTestCase;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
+
+import io.github.dariopipa.tdd.catalog.entities.Category;
+import io.github.dariopipa.tdd.catalog.entities.Product;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 
 @RunWith(GUITestRunner.class)
 public class CatalogSwingAppE2E extends AssertJSwingJUnitTestCase { // NOSONAR we want the name this way
@@ -30,6 +39,7 @@ public class CatalogSwingAppE2E extends AssertJSwingJUnitTestCase { // NOSONAR w
 	private static final BigDecimal PRODUCT_PRICE = BigDecimal.valueOf(100);
 	private static final String NON_VALID_PRICE = "-1";
 	private FrameFixture window;
+	private static EntityManagerFactory emf;
 
 	@SuppressWarnings("resource")
 	@ClassRule
@@ -37,10 +47,24 @@ public class CatalogSwingAppE2E extends AssertJSwingJUnitTestCase { // NOSONAR w
 			DockerImageName.parse("postgres:16-alpine")).withDatabaseName("e2eTest").withUsername("E2Etest")
 			.withPassword("E2Etest");
 
+	@BeforeClass
+	public static void beforeAll() {
+		Map<String, String> properties = new HashMap<>();
+		properties.put("jakarta.persistence.jdbc.url", postgres.getJdbcUrl());
+		properties.put("jakarta.persistence.jdbc.user", postgres.getUsername());
+		properties.put("jakarta.persistence.jdbc.password", postgres.getPassword());
+		properties.put("hibernate.hbm2ddl.auto", "create");
+
+		emf = Persistence.createEntityManagerFactory("product-catalogPU", properties);
+	}
+
 	@Override
 	protected void onSetUp() {
-		application("io.github.dariopipa.tdd.catalog.App").withArgs("--jdbc-url=" + postgres.getJdbcUrl(),
-				"--jdbc-user=" + postgres.getUsername(), "--jdbc-password=" + postgres.getPassword()).start();
+		cleanAndSeedDB();
+		application("io.github.dariopipa.tdd.catalog.App")
+				.withArgs("--jdbc-url=" + postgres.getJdbcUrl(), "--jdbc-user=" + postgres.getUsername(),
+						"--jdbc-password=" + postgres.getPassword(), "--hibernate-ddl=update")
+				.start();
 
 		// Get a reference to the JFrame
 		window = WindowFinder.findFrame(new GenericTypeMatcher<JFrame>(JFrame.class) {
@@ -49,26 +73,27 @@ public class CatalogSwingAppE2E extends AssertJSwingJUnitTestCase { // NOSONAR w
 				return "Catalog".equals(frame.getTitle()) && frame.isShowing();
 			}
 		}).using(robot());
-
-		createCategoryViaUI(CATEGORY_NAME);
-		createProductViaUI(PRODUCT_A, PRODUCT_PRICE, CATEGORY_NAME);
 	}
 
-	private void createCategoryViaUI(String name) {
-		window.textBox("newName").deleteText().enterText(name);
-		window.button("addCategoryButton").click();
+	private static void cleanAndSeedDB() {
+		EntityManager em = emf.createEntityManager();
+		try {
+			em.getTransaction().begin();
 
-		window.label("errorLabel").requireText("");
+			// delete existing data
+			em.createQuery("DELETE FROM Product").executeUpdate();
+			em.createQuery("DELETE FROM Category").executeUpdate();
 
-		assertThat(window.comboBox("productCategorySelectBox").contents()).contains(name);
-	}
+			Category category = new Category(CATEGORY_NAME);
+			em.persist(category);
 
-	private void createProductViaUI(String name, BigDecimal price, String category) {
-		window.comboBox("productCategorySelectBox").selectItem(category);
-		window.textBox("productNewName").deleteText().enterText(name);
-		window.textBox("productNewPrice").deleteText().enterText(price.toString());
-		window.button("addProductButton").click();
-		window.label("errorLabel").requireText("");
+			Product product = new Product(PRODUCT_A, PRODUCT_PRICE, category);
+			em.persist(product);
+
+			em.getTransaction().commit();
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to seed te database");
+		}
 	}
 
 	@Test
@@ -127,7 +152,7 @@ public class CatalogSwingAppE2E extends AssertJSwingJUnitTestCase { // NOSONAR w
 	@GUITest
 	public void testUpdateCategoryButton_withExistingName_shouldShowError() {
 		window.table("categoryTable").selectRows(0);
-//		window.textBox("newName").enterText(CATEGORY_NAME);
+		window.textBox("newName").enterText(CATEGORY_NAME);
 		window.button("updateCategoryButton").requireEnabled();
 		window.button("updateCategoryButton").click();
 

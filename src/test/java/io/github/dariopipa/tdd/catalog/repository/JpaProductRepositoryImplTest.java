@@ -167,8 +167,7 @@ public class JpaProductRepositoryImplTest {
 
 		List<Product> result = jpaProductRepositoryImpl.findAll();
 
-		assertThat(result).hasSize(2);
-		assertThat(result).contains(product1, product2);
+		assertThat(result).hasSize(2).contains(product1, product2);
 	}
 
 	@Test

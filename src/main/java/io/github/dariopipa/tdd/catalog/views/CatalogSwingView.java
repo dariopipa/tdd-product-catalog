@@ -3,8 +3,6 @@ package io.github.dariopipa.tdd.catalog.views;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.math.BigDecimal;
@@ -37,8 +35,8 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 	private JTextField productNewPrice;
 	private JComboBox<Category> productCategorySelectBox;
 	private JLabel errorLabel;
-	private CategoryController categoryController;
-	private ProductController productController;
+	private transient CategoryController categoryController;
+	private transient ProductController productController;
 
 	/**
 	 * Create the frame.
@@ -66,24 +64,18 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 		categoryPanel.add(categoryName);
 
 		JButton addCategoryButton = new JButton("Add New Category");
-		addCategoryButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				categoryController.create(newName.getText().trim());
-			}
-		});
+		addCategoryButton.addActionListener(e -> categoryController.create(newName.getText().trim()));
 		addCategoryButton.setEnabled(false);
 		addCategoryButton.setName("addCategoryButton");
 		addCategoryButton.setBounds(52, 229, 123, 23);
 		categoryPanel.add(addCategoryButton);
 
 		JButton deleteCategoryButton = new JButton("Delete Selected");
-		deleteCategoryButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				int selectedRow = categoryTable.getSelectedRow();
-				if (selectedRow != -1) {
-					Long categoryId = (Long) categoryModel().getValueAt(selectedRow, 0);
-					categoryController.delete(categoryId);
-				}
+		deleteCategoryButton.addActionListener(e -> {
+			int selectedRow = categoryTable.getSelectedRow();
+			if (selectedRow != -1) {
+				Long categoryId = (Long) categoryModel().getValueAt(selectedRow, 0);
+				categoryController.delete(categoryId);
 			}
 		});
 		deleteCategoryButton.setEnabled(false);
@@ -92,13 +84,11 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 		categoryPanel.add(deleteCategoryButton);
 
 		JButton updateCategoryButton = new JButton("Update Selected");
-		updateCategoryButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				int selectedRow = categoryTable.getSelectedRow();
-				if (selectedRow != -1) {
-					Long categoryId = (Long) categoryModel().getValueAt(selectedRow, 0);
-					categoryController.update(categoryId, newName.getText().trim());
-				}
+		updateCategoryButton.addActionListener(e -> {
+			int selectedRow = categoryTable.getSelectedRow();
+			if (selectedRow != -1) {
+				Long categoryId = (Long) categoryModel().getValueAt(selectedRow, 0);
+				categoryController.update(categoryId, newName.getText().trim());
 			}
 		});
 		updateCategoryButton.setEnabled(false);
@@ -164,26 +154,21 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 		productPanel.add(lblProducts);
 
 		JButton addProductButton = new JButton("Add New Product");
-		addProductButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				productController.create(productNewName.getText().strip(), new BigDecimal(productNewPrice.getText()),
-						getSelectedIdFromCategoryTypes());
-			}
-		});
+		addProductButton.addActionListener(e -> productController.create(productNewName.getText().strip(),
+				new BigDecimal(productNewPrice.getText()), getSelectedIdFromCategoryTypes()));
 		addProductButton.setEnabled(false);
 		addProductButton.setName("addProductButton");
 		addProductButton.setBounds(10, 275, 123, 23);
 		productPanel.add(addProductButton);
 
 		JButton deleteProductButton = new JButton("Delete Selected Product");
-		deleteProductButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				int selectedRow = productTable.getSelectedRow();
-				if (selectedRow != -1) {
-					Long categoryId = (Long) productModel().getValueAt(selectedRow, 0);
-					productController.delete(categoryId);
-				}
+		deleteProductButton.addActionListener(e -> {
+			int selectedRow = productTable.getSelectedRow();
+			if (selectedRow != -1) {
+				Long categoryId = (Long) productModel().getValueAt(selectedRow, 0);
+				productController.delete(categoryId);
 			}
+
 		});
 		deleteProductButton.setEnabled(false);
 		deleteProductButton.setName("deleteProductButton");
@@ -191,14 +176,12 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 		productPanel.add(deleteProductButton);
 
 		JButton updateProductButton = new JButton("Update Selected Product");
-		updateProductButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				int selectedRow = productTable.getSelectedRow();
-				if (selectedRow != -1) {
-					Long productId = (Long) productModel().getValueAt(selectedRow, 0);
-					productController.update(productId, productNewName.getText().strip(),
-							new BigDecimal(productNewPrice.getText()), getSelectedIdFromCategoryTypes());
-				}
+		updateProductButton.addActionListener(e -> {
+			int selectedRow = productTable.getSelectedRow();
+			if (selectedRow != -1) {
+				Long productId = (Long) productModel().getValueAt(selectedRow, 0);
+				productController.update(productId, productNewName.getText().strip(),
+						new BigDecimal(productNewPrice.getText()), getSelectedIdFromCategoryTypes());
 			}
 		});
 		updateProductButton.setEnabled(false);
@@ -208,7 +191,7 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 
 		JScrollPane scrollPane = new JScrollPane();
 		scrollPane.setFocusable(false);
-		scrollPane.setName("productScrollPane");
+		scrollPane.setName("productTable");
 		scrollPane.setBounds(38, 28, 223, 138);
 		productPanel.add(scrollPane);
 
@@ -281,13 +264,10 @@ public class CatalogSwingView extends JFrame implements CategoryView, ProductVie
 		productNewPrice.setBounds(88, 212, 86, 20);
 		productPanel.add(productNewPrice);
 
-		productCategorySelectBox = new JComboBox<Category>();
-		productCategorySelectBox.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				addProductButton.setEnabled(activateAddProductButtonIfValid());
-				updateProductButton.setEnabled(productTable.getSelectedRow() >= 0 && activateAddProductButtonIfValid());
-			}
-
+		productCategorySelectBox = new JComboBox<>();
+		productCategorySelectBox.addActionListener(e -> {
+			addProductButton.setEnabled(activateAddProductButtonIfValid());
+			updateProductButton.setEnabled(productTable.getSelectedRow() >= 0 && activateAddProductButtonIfValid());
 		});
 		productCategorySelectBox.setName("productCategorySelectBox");
 		productCategorySelectBox.setBounds(88, 240, 86, 22);

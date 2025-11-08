@@ -8,7 +8,7 @@ import io.github.dariopipa.tdd.catalog.entities.Product;
 import io.github.dariopipa.tdd.catalog.exceptions.EntityNotFoundException;
 import io.github.dariopipa.tdd.catalog.exceptions.ProductNameAlreadyExistsExcpetion;
 import io.github.dariopipa.tdd.catalog.repository.ProductRepository;
-import io.github.dariopipa.tdd.catalog.transactionManger.TransactionManager;
+import io.github.dariopipa.tdd.catalog.transactionmanager.TransactionManager;
 
 public class ProductService {
 
@@ -50,9 +50,7 @@ public class ProductService {
 	}
 
 	public List<Product> findAll() {
-		return transactionManager.doInTransaction(() -> {
-			return productRepository.findAll();
-		});
+		return transactionManager.doInTransaction(() -> productRepository.findAll());
 	}
 
 	public Product update(Long id, String name, BigDecimal price, Long categoryId) {

@@ -1,5 +1,6 @@
-package io.github.dariopipa.tdd.catalog.transactionManger;
+package io.github.dariopipa.tdd.catalog.transactionmanager;
 
+import io.github.dariopipa.tdd.catalog.exceptions.JPARepoException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 
@@ -21,12 +22,12 @@ public class JPATransactionManager implements TransactionManager {
 			entityTransaction.commit();
 
 			return result;
+		} catch (JPARepoException e) {
+			entityTransaction.rollback();
+			throw new JPARepoException(e.getMessage());
 		} catch (RuntimeException e) {
 			entityTransaction.rollback();
 			throw e;
-		} catch (Exception e) {
-			entityTransaction.rollback();
-			throw new RuntimeException(e);
 		}
 	}
 }

@@ -8,7 +8,7 @@ import io.github.dariopipa.tdd.catalog.exceptions.CategoryNameAlreadyExistsExcpe
 import io.github.dariopipa.tdd.catalog.exceptions.EntityNotFoundException;
 import io.github.dariopipa.tdd.catalog.repository.CategoryRepository;
 import io.github.dariopipa.tdd.catalog.repository.ProductRepository;
-import io.github.dariopipa.tdd.catalog.transactionManger.TransactionManager;
+import io.github.dariopipa.tdd.catalog.transactionmanager.TransactionManager;
 
 public class CategoryService {
 
@@ -48,15 +48,11 @@ public class CategoryService {
 	}
 
 	public List<Category> findAll() {
-		return transactionManager.doInTransaction(() -> {
-			return categoryRepository.findAll();
-		});
+		return transactionManager.doInTransaction(() -> categoryRepository.findAll());
 	}
 
 	public Category findById(Long id) {
-		return transactionManager.doInTransaction(() -> {
-			return findByIdInternal(id);
-		});
+		return transactionManager.doInTransaction(() -> findByIdInternal(id));
 	}
 
 	Category findByIdInternal(Long id) {
@@ -75,8 +71,8 @@ public class CategoryService {
 		return result;
 	}
 
-	public Category update(Long entity_Id, String name) {
-		Category existingCategory = findByIdInternal(entity_Id);
+	public Category update(Long entityId, String name) {
+		Category existingCategory = findByIdInternal(entityId);
 
 		return transactionManager.doInTransaction(() -> {
 			String normalizedName = validateAndNormalizeName(name);
@@ -84,8 +80,7 @@ public class CategoryService {
 
 			existingCategory.setName(normalizedName);
 
-			Category result = categoryRepository.update(existingCategory);
-			return result;
+			return categoryRepository.update(existingCategory);
 		});
 	}
 
