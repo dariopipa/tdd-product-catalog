@@ -49,13 +49,18 @@ public class JpaCategoryRepositoryImpl implements CategoryRepository {
 
 	@Override
 	public Category update(Category category) {
-
 		return entityManager.merge(category);
 	}
 
 	@Override
 	public List<Category> findAll() {
 		return entityManager.createQuery("SELECT c FROM Category c", Category.class).getResultList();
+	}
+
+	@Override
+	public Long countProductsByCategoryId(Long categoryId) {
+		return entityManager.createQuery("SELECT COUNT(p) FROM Product p WHERE p.category.id = :categoryId", Long.class)
+				.setParameter("categoryId", categoryId).getSingleResult();
 	}
 
 }

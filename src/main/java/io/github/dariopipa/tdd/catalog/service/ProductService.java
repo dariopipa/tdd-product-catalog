@@ -12,79 +12,61 @@ import io.github.dariopipa.tdd.catalog.transactionmanager.TransactionManager;
 
 public class ProductService {
 
-	private ProductRepository productRepository;
 	private CategoryService categoryService;
-	private TransactionManager transactionManager;
+	private TransactionManager<ProductRepository> transactionManager;
 
-	public ProductService(ProductRepository productRepository, CategoryService categoryService,
-			TransactionManager transactionManager) {
-
-		this.productRepository = productRepository;
+	public ProductService(CategoryService categoryService, TransactionManager<ProductRepository> transactionManager) {
 		this.categoryService = categoryService;
 		this.transactionManager = transactionManager;
 	}
 
 	public Long create(String name, BigDecimal price, Long categoryId) {
-		return transactionManager.doInTransaction(() -> {
-			Category category = categoryService.findByIdInternal(categoryId);
-			String normalized = validateAndNormalizeName(name);
+		validatePrice(price);
+		String normalizedName = validateAndNormalizeName(name);
+		Category category = categoryService.findById(categoryId);
 
-			findByName(normalized);
-			validatePrice(price);
+		return transactionManager.doInTransaction(repo -> {
+			ensureProductNameIsAvaiable(repo, normalizedName);
 
-			return productRepository.create(new Product(normalized, price, category));
+			return repo.create(new Product(normalizedName, price, category));
 		});
 	}
 
 	public Product findById(Long id) {
 		validateId(id);
 
-		return transactionManager.doInTransaction(() -> {
-			Product resultProduct = productRepository.findById(id);
-			if (resultProduct == null) {
-				throw new EntityNotFoundException("product with id: " + id + " not found");
-			}
-
-			return resultProduct;
-		});
+		return transactionManager.doInTransaction(repo -> productExists(repo, id));
 	}
 
 	public List<Product> findAll() {
-		return transactionManager.doInTransaction(() -> productRepository.findAll());
+		return transactionManager.doInTransaction(repo -> repo.findAll());
 	}
 
 	public Product update(Long id, String name, BigDecimal price, Long categoryId) {
-		return transactionManager.doInTransaction(() -> {
-			Product existingProduct = this.findByIdInternal(id);
-			Category category = categoryService.findByIdInternal(categoryId);
+		validateId(id);
+		validatePrice(price);
+		String normalizedName = validateAndNormalizeName(name);
+		Category category = categoryService.findById(categoryId);
 
-			String normalized = validateAndNormalizeName(name);
-			findByName(normalized);
-			validatePrice(price);
+		return transactionManager.doInTransaction(repo -> {
+			Product existingProduct = productExists(repo, id);
 
-			existingProduct.setName(normalized);
+			ensureProductNameIsAvaiable(repo, normalizedName);
+			existingProduct.setName(normalizedName);
 			existingProduct.setPrice(price);
 			existingProduct.setCategory(category);
 
-			return productRepository.update(existingProduct);
+			return repo.update(existingProduct);
 		});
 	}
 
 	public void delete(Long id) {
-		transactionManager.doInTransaction(() -> {
-			Product existingProduct = findByIdInternal(id);
+		transactionManager.doInTransaction(repo -> {
+			Product existingProduct = productExists(repo, id);
 
-			productRepository.delete(existingProduct);
+			repo.delete(existingProduct);
 			return null;
 		});
-	}
-
-	Product findByIdInternal(Long id) {
-		validateId(id);
-		Product p = productRepository.findById(id);
-		if (p == null)
-			throw new EntityNotFoundException("product with id: " + id + " not found");
-		return p;
 	}
 
 	private void validateId(Long id) {
@@ -96,21 +78,12 @@ public class ProductService {
 		}
 	}
 
-	private void findByName(String name) {
-		Product result = productRepository.findByName(name);
-
-		if (result != null) {
-			throw new ProductNameAlreadyExistsExcpetion();
-		}
-	}
-
 	private String validateAndNormalizeName(String name) {
 		if (name == null) {
 			throw new IllegalArgumentException("name must be provided");
 		}
 
 		String normalized = name.strip().toLowerCase();
-
 		if (normalized.isBlank()) {
 			throw new IllegalArgumentException("name must contain valid characters");
 		}
@@ -126,4 +99,19 @@ public class ProductService {
 		}
 	}
 
+	private Product productExists(ProductRepository repo, Long id) {
+		Product existingProduct = repo.findById(id);
+		if (existingProduct == null) {
+			throw new EntityNotFoundException("product with id: " + id + " not found");
+		}
+
+		return existingProduct;
+	}
+
+	private void ensureProductNameIsAvaiable(ProductRepository repo, String name) {
+		Product existingProduct = repo.findByName(name);
+		if (existingProduct != null) {
+			throw new ProductNameAlreadyExistsExcpetion();
+		}
+	}
 }

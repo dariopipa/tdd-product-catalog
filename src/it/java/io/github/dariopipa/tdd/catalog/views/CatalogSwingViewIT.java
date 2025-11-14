@@ -21,8 +21,10 @@ import org.testcontainers.utility.DockerImageName;
 
 import io.github.dariopipa.tdd.catalog.controllers.CategoryController;
 import io.github.dariopipa.tdd.catalog.controllers.ProductController;
+import io.github.dariopipa.tdd.catalog.repository.CategoryRepository;
 import io.github.dariopipa.tdd.catalog.repository.JpaCategoryRepositoryImpl;
 import io.github.dariopipa.tdd.catalog.repository.JpaProductRepositoryImpl;
+import io.github.dariopipa.tdd.catalog.repository.ProductRepository;
 import io.github.dariopipa.tdd.catalog.service.CategoryService;
 import io.github.dariopipa.tdd.catalog.service.ProductService;
 import io.github.dariopipa.tdd.catalog.transactionmanager.JPATransactionManager;
@@ -47,14 +49,14 @@ public class CatalogSwingViewIT extends AssertJSwingJUnitTestCase {
 	private static EntityManagerFactory emf;
 	private EntityManager em;
 	private JpaCategoryRepositoryImpl categoryRepository;
-	private JpaProductRepositoryImpl productRepository;
-	private JPATransactionManager transactionManager;
 	private CategoryService categoryService;
 	private ProductService productService;
 	private CategoryController categoryController;
 	private ProductController productController;
 	private CatalogSwingView catalogSwingView;
 	private FrameFixture frameFixture;
+	private JPATransactionManager<CategoryRepository> categoryTransactionManager;
+	private JPATransactionManager<ProductRepository> productTransactionManager;
 
 	@SuppressWarnings("resource")
 	@ClassRule
@@ -78,11 +80,13 @@ public class CatalogSwingViewIT extends AssertJSwingJUnitTestCase {
 	@Override
 	protected void onSetUp() {
 		em = emf.createEntityManager();
-		transactionManager = new JPATransactionManager(em);
+
+		categoryTransactionManager = new JPATransactionManager<CategoryRepository>(em, JpaCategoryRepositoryImpl::new);
+		productTransactionManager = new JPATransactionManager<ProductRepository>(em, JpaProductRepositoryImpl::new);
+
 		categoryRepository = new JpaCategoryRepositoryImpl(em);
-		productRepository = new JpaProductRepositoryImpl(em);
-		categoryService = new CategoryService(categoryRepository, transactionManager, productRepository);
-		productService = new ProductService(productRepository, categoryService, transactionManager);
+		categoryService = new CategoryService(categoryTransactionManager);
+		productService = new ProductService(categoryService, productTransactionManager);
 		categoryController = new CategoryController(categoryService, catalogSwingView);
 		productController = new ProductController(productService, catalogSwingView);
 

@@ -150,7 +150,7 @@ public class CatalogSwingAppE2E extends AssertJSwingJUnitTestCase { // NOSONAR w
 
 	@Test
 	@GUITest
-	public void testUpdateCategoryButton_withExistingName_shouldShowError() {
+	public void test_updateCategoryButton_withExistingName_shouldShowError() {
 		window.table("categoryTable").selectRows(0);
 		window.textBox("newName").enterText(CATEGORY_NAME);
 		window.button("updateCategoryButton").requireEnabled();
