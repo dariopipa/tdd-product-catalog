@@ -30,6 +30,7 @@
 		<sonar.version>5.2.0.4988</sonar.version>
 		<jacoco.version>0.8.12</jacoco.version>
 		<pitest.version>1.17.3</pitest.version>
+		<coveralls.version>5.0.0</coveralls.version>
 
 		<sonar.host.url>http://localhost:9000</sonar.host.url>
 		<sonar.issue.ignore.multicriteria>e11,e12,e13,e14,e15,e16,e17</sonar.issue.ignore.multicriteria>
@@ -190,9 +191,32 @@
 				<plugin>
 					<groupId>com.github.hazendaz.maven</groupId>
 					<artifactId>coveralls-maven-plugin</artifactId>
-					<version>5.0.0</version>
+					<version>${coveralls.version}</version>
 					<configuration>
 						<repoToken>${env.COVERALLS_REPO_TOKEN}</repoToken>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.pitest</groupId>
+					<artifactId>pitest-maven</artifactId>
+					<version>${pitest.version}</version>
+					<configuration>
+						<targetClasses>
+							<param>io.github.dariopipa.tdd.catalog.controllers.*</param>
+							<param>io.github.dariopipa.tdd.catalog.service.*</param>
+							<param>io.github.dariopipa.tdd.catalog.repository.*</param>
+							<param>io.github.dariopipa.tdd.catalog.transactionmanager.*</param>
+						</targetClasses>
+						<targetTests>
+							<param>io.github.dariopipa.tdd.catalog.controllers.*</param>
+							<param>io.github.dariopipa.tdd.catalog.service.*</param>
+							<param>io.github.dariopipa.tdd.catalog.repository.*</param>
+							<param>io.github.dariopipa.tdd.catalog.transactionManager.*</param>
+						</targetTests>
+						<mutators>
+							<mutator>DEFAULTS</mutator>
+						</mutators>
+						<mutationThreshold>100</mutationThreshold>
 					</configuration>
 				</plugin>
 			</plugins>

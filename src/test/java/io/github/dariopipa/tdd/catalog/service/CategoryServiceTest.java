@@ -286,7 +286,6 @@ public class CategoryServiceTest {
 	@Test
 	public void test_findAllWithElements_returnListOfProducts() {
 		when(categoryRepository.findAll()).thenReturn(asList(new Category("category 1"), new Category("category 2")));
-
 		List<Category> result = categoryService.findAll();
 
 		assertThat(result).hasSize(2);
@@ -299,7 +298,6 @@ public class CategoryServiceTest {
 		when(categoryRepository.findAll()).thenReturn(new ArrayList<Category>());
 
 		List<Category> result = categoryService.findAll();
-
 		assertThat(result).isEmpty();
 
 		verify(transactionManager).doInTransaction(any());
@@ -320,6 +318,33 @@ public class CategoryServiceTest {
 		inOrder.verify(categoryRepository).findById(EXISTING_ID);
 		inOrder.verify(categoryRepository).countProductsByCategoryId(EXISTING_ID);
 		inOrder.verify(categoryRepository, never()).delete(existingCategory);
+	}
+
+	@Test
+	public void test_deleteWithNullId_shouldThrowIllegalArgumentException() {
+		assertThatThrownBy(() -> categoryService.delete(null)).isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("id must be provided");
+
+		verify(transactionManager, never()).doInTransaction(any());
+		verify(categoryRepository, never()).findById(any());
+	}
+
+	@Test
+	public void test_deleteWithNegativeId_shouldThrowIllegalArgumentException() {
+		assertThatThrownBy(() -> categoryService.delete(-1L)).isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("id must be positive");
+
+		verify(transactionManager, never()).doInTransaction(any());
+		verify(categoryRepository, never()).findById(any());
+	}
+
+	@Test
+	public void test_deleteWithZeroId_shouldThrowIllegalArgumentException() {
+		assertThatThrownBy(() -> categoryService.delete(0L)).isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("id must be positive");
+
+		verify(transactionManager, never()).doInTransaction(any());
+		verify(categoryRepository, never()).findById(any());
 	}
 
 }
