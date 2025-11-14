@@ -65,12 +65,13 @@ public class App implements Callable<Void> {
 				EntityManagerFactory emf = Persistence.createEntityManagerFactory("product-catalogPU", props);
 				EntityManager em = emf.createEntityManager();
 
-				JPATransactionManager transactionManager = new JPATransactionManager(em);
-				CategoryRepository categoryRepo = new JpaCategoryRepositoryImpl(em);
-				ProductRepository productRepo = new JpaProductRepositoryImpl(em);
+				JPATransactionManager<CategoryRepository> categoryTransactionManager = new JPATransactionManager<>(em,
+						JpaCategoryRepositoryImpl::new);
+				JPATransactionManager<ProductRepository> productTransactionManager = new JPATransactionManager<>(em,
+						JpaProductRepositoryImpl::new);
 
-				CategoryService categoryService = new CategoryService(categoryRepo, transactionManager, productRepo);
-				ProductService productService = new ProductService(productRepo, categoryService, transactionManager);
+				CategoryService categoryService = new CategoryService(categoryTransactionManager);
+				ProductService productService = new ProductService(categoryService, productTransactionManager);
 
 				CatalogSwingView view = new CatalogSwingView();
 				CategoryController categoryController = new CategoryController(categoryService, view);
