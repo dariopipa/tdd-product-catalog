@@ -53,7 +53,9 @@ public class ProductControllerIT {
 	private EntityManager em;
 	private ProductRepository productRepository;
 	private ProductService productService;
-	private JPATransactionManager transactionManager;
+	private JPATransactionManager<CategoryRepository> categoryTransactionManager;
+	private JPATransactionManager<ProductRepository> productTransactionManager;
+
 	private ProductController productController;
 	private CategoryRepository categoryRepository;
 	private CategoryService categoryService;
@@ -92,13 +94,15 @@ public class ProductControllerIT {
 		tempEm.close();
 
 		em = emf.createEntityManager();
-		transactionManager = new JPATransactionManager(em);
+		categoryTransactionManager = new JPATransactionManager<CategoryRepository>(em, JpaCategoryRepositoryImpl::new);
+		productTransactionManager = new JPATransactionManager<ProductRepository>(em, JpaProductRepositoryImpl::new);
+
 		productRepository = new JpaProductRepositoryImpl(em);
-
 		categoryRepository = new JpaCategoryRepositoryImpl(em);
-		categoryService = new CategoryService(categoryRepository, transactionManager, productRepository);
 
-		productService = new ProductService(productRepository, categoryService, transactionManager);
+		categoryService = new CategoryService(categoryTransactionManager);
+		productService = new ProductService(categoryService, productTransactionManager);
+
 		productController = new ProductController(productService, productView);
 		categoryController = new CategoryController(categoryService, categoryView);
 	}
