@@ -17,5 +17,4 @@ public interface ProductRepository {
 
 	List<Product> findAll();
 
-	Long countByCategoryId(Long categoryId);
 }

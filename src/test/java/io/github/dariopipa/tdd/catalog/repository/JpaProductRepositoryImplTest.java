@@ -20,8 +20,6 @@ public class JpaProductRepositoryImplTest {
 	private static final String PU_NAME = "product-catalog-IM-PU";
 
 	private static final long MISSING_ID = 999L;
-	private static final long EXISTING_CATEGORY_ID = 1L;
-
 	private static final BigDecimal PRICE_100 = BigDecimal.valueOf(100);
 	private static final BigDecimal PRICE_ZERO = BigDecimal.ZERO;
 
@@ -170,18 +168,4 @@ public class JpaProductRepositoryImplTest {
 		assertThat(result).hasSize(2).contains(product1, product2);
 	}
 
-	@Test
-	public void test_returnCountOfProductsThatUseASpecificCategory() {
-		Product product = new Product(PRODUCT_NAME, PRICE_100, category);
-		Product iphone = new Product(IPHONE_PRODUCT_NAME, PRICE_100, category);
-
-		transaction.begin();
-		jpaProductRepositoryImpl.create(product);
-		jpaProductRepositoryImpl.create(iphone);
-		transaction.commit();
-
-		Long result = jpaProductRepositoryImpl.countByCategoryId(EXISTING_CATEGORY_ID);
-
-		assertThat(result).isEqualTo(2L);
-	}
 }

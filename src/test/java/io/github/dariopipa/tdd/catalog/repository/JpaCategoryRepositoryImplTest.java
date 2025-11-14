@@ -2,12 +2,14 @@ package io.github.dariopipa.tdd.catalog.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import io.github.dariopipa.tdd.catalog.entities.Category;
+import io.github.dariopipa.tdd.catalog.entities.Product;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.EntityTransaction;
@@ -24,6 +26,7 @@ public class JpaCategoryRepositoryImplTest {
 
 	private EntityManagerFactory entityManagerFactory;
 	private JpaCategoryRepositoryImpl jpaCategoryRepositoryImpl;
+	private JpaProductRepositoryImpl jpaProductRepositoryImpl;
 	private EntityManager entityManager;
 	private EntityTransaction transaction;
 
@@ -32,6 +35,7 @@ public class JpaCategoryRepositoryImplTest {
 		entityManagerFactory = Persistence.createEntityManagerFactory(PU_NAME);
 		entityManager = entityManagerFactory.createEntityManager();
 		jpaCategoryRepositoryImpl = new JpaCategoryRepositoryImpl(entityManager);
+		jpaProductRepositoryImpl = new JpaProductRepositoryImpl(entityManager);
 		transaction = entityManager.getTransaction();
 	}
 
@@ -146,6 +150,23 @@ public class JpaCategoryRepositoryImplTest {
 		List<Category> result = jpaCategoryRepositoryImpl.findAll();
 
 		assertThat(result).hasSize(2).contains(category1, category2);
+	}
+
+	@Test
+	public void test_returnCountOfProductsThatUseASpecificCategory() {
+		Category category = new Category(CATEGORY_NAME);
+		Product product = new Product("product", new BigDecimal("100"), category);
+		Product iphone = new Product("iPhone", new BigDecimal("100"), category);
+
+		transaction.begin();
+		jpaCategoryRepositoryImpl.create(category);
+		jpaProductRepositoryImpl.create(product);
+		jpaProductRepositoryImpl.create(iphone);
+		transaction.commit();
+
+		Long result = jpaCategoryRepositoryImpl.countProductsByCategoryId(1L);
+
+		assertThat(result).isEqualTo(2L);
 	}
 
 }
