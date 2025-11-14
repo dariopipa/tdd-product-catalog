@@ -39,7 +39,7 @@ public class CategoryServiceTest {
 	private CategoryRepository categoryRepository;
 
 	@Mock
-	private TransactionManager transactionManager;
+	private TransactionManager<CategoryRepository> transactionManager;
 
 	@Mock
 	private ProductRepository productRepository;
@@ -59,9 +59,10 @@ public class CategoryServiceTest {
 	public void setup() {
 		closeable = MockitoAnnotations.openMocks(this);
 
-		when(transactionManager.doInTransaction(any())).thenAnswer(answer((TransactionCode<?> code) -> code.execute()));
+		when(transactionManager.doInTransaction(any())).thenAnswer(
+				answer((TransactionCode<CategoryRepository, Object> code) -> code.apply(categoryRepository)));
 
-		categoryService = new CategoryService(categoryRepository, transactionManager, productRepository);
+		categoryService = new CategoryService(transactionManager);
 	}
 
 	@After
@@ -110,7 +111,7 @@ public class CategoryServiceTest {
 		assertThatThrownBy(() -> categoryService.findById(null)).isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("id must be provided");
 
-		verify(transactionManager).doInTransaction(any());
+		verify(transactionManager, never()).doInTransaction(any());
 		verify(categoryRepository, never()).findById(null);
 	}
 
@@ -121,7 +122,7 @@ public class CategoryServiceTest {
 		assertThatThrownBy(() -> categoryService.findById(-1L)).isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("id must be positive");
 
-		verify(transactionManager).doInTransaction(any());
+		verify(transactionManager, never()).doInTransaction(any());
 		verify(categoryRepository, never()).findById(-1L);
 	}
 
@@ -132,7 +133,7 @@ public class CategoryServiceTest {
 		assertThatThrownBy(() -> categoryService.findById(0L)).isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("id must be positive");
 
-		verify(transactionManager).doInTransaction(any());
+		verify(transactionManager, never()).doInTransaction(any());
 		verify(categoryRepository, never()).findById(0L);
 	}
 
@@ -154,7 +155,7 @@ public class CategoryServiceTest {
 		assertThatThrownBy(() -> categoryService.createCategory(BLANK_TABS_NAME))
 				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name must be provided");
 
-		verify(transactionManager).doInTransaction(any());
+		verify(transactionManager, never()).doInTransaction(any());
 		verify(categoryRepository, never()).create(any(Category.class));
 	}
 
@@ -203,7 +204,7 @@ public class CategoryServiceTest {
 		assertThatThrownBy(() -> categoryService.delete(MISSING_ID)).isInstanceOf(EntityNotFoundException.class)
 				.hasMessage("category with id:" + MISSING_ID + " not found");
 
-		verify(transactionManager, times(1)).doInTransaction(any());
+		verify(transactionManager).doInTransaction(any());
 		verify(categoryRepository).findById(MISSING_ID);
 		verify(categoryRepository, never()).delete(any());
 	}
@@ -263,8 +264,8 @@ public class CategoryServiceTest {
 		assertThatThrownBy(() -> categoryService.update(EXISTING_ID, null)).isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("name must be provided");
 
-		verify(transactionManager, times(1)).doInTransaction(any());
-		verify(categoryRepository).findById(EXISTING_ID);
+		verify(transactionManager, never()).doInTransaction(any());
+		verify(categoryRepository, never()).findById(EXISTING_ID);
 		verify(categoryRepository, never()).findByName(CATEGORY_NAME_NORMALIZED);
 		verify(categoryRepository, never()).update(any(Category.class));
 	}
@@ -277,7 +278,7 @@ public class CategoryServiceTest {
 		assertThatThrownBy(() -> categoryService.update(EXISTING_ID, BLANK_TABS_NAME))
 				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("name must be provided");
 
-		verify(transactionManager, times(1)).doInTransaction(any());
+		verify(transactionManager, never()).doInTransaction(any());
 		verify(categoryRepository, never()).findByName(CATEGORY_NAME_NORMALIZED);
 		verify(categoryRepository, never()).update(any(Category.class));
 	}
@@ -311,13 +312,13 @@ public class CategoryServiceTest {
 		existingCategory.setId(EXISTING_ID);
 
 		when(categoryRepository.findById(EXISTING_ID)).thenReturn(existingCategory);
-		when(productRepository.countByCategoryId(EXISTING_ID)).thenReturn(2L);
+		when(categoryRepository.countProductsByCategoryId(EXISTING_ID)).thenReturn(2L);
 
 		assertThatThrownBy(() -> categoryService.delete(EXISTING_ID)).isInstanceOf(CategoryInUseException.class);
 
 		InOrder inOrder = Mockito.inOrder(categoryRepository, productRepository);
 		inOrder.verify(categoryRepository).findById(EXISTING_ID);
-		inOrder.verify(productRepository).countByCategoryId(EXISTING_ID);
+		inOrder.verify(categoryRepository).countProductsByCategoryId(EXISTING_ID);
 		inOrder.verify(categoryRepository, never()).delete(existingCategory);
 	}
 

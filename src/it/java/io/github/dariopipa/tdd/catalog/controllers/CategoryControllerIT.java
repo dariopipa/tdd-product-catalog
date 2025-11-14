@@ -21,8 +21,6 @@ import org.testcontainers.utility.DockerImageName;
 import io.github.dariopipa.tdd.catalog.entities.Category;
 import io.github.dariopipa.tdd.catalog.repository.CategoryRepository;
 import io.github.dariopipa.tdd.catalog.repository.JpaCategoryRepositoryImpl;
-import io.github.dariopipa.tdd.catalog.repository.JpaProductRepositoryImpl;
-import io.github.dariopipa.tdd.catalog.repository.ProductRepository;
 import io.github.dariopipa.tdd.catalog.service.CategoryService;
 import io.github.dariopipa.tdd.catalog.transactionmanager.JPATransactionManager;
 import io.github.dariopipa.tdd.catalog.views.CategoryView;
@@ -45,9 +43,8 @@ public class CategoryControllerIT {
 	private EntityManager em;
 	private CategoryRepository categoryRepository;
 	private CategoryService categoryService;
-	private JPATransactionManager transactionManager;
+	private JPATransactionManager<CategoryRepository> transactionManager;
 	private CategoryController categoryController;
-	private ProductRepository productRepository;
 
 	private AutoCloseable closeable;
 
@@ -82,9 +79,9 @@ public class CategoryControllerIT {
 
 		em = emf.createEntityManager();
 		categoryRepository = new JpaCategoryRepositoryImpl(em);
-		productRepository = new JpaProductRepositoryImpl(em);
-		transactionManager = new JPATransactionManager(em);
-		categoryService = new CategoryService(categoryRepository, transactionManager, productRepository);
+		transactionManager = new JPATransactionManager<CategoryRepository>(em, JpaCategoryRepositoryImpl::new);
+
+		categoryService = new CategoryService(transactionManager);
 		categoryController = new CategoryController(categoryService, categoryView);
 	}
 

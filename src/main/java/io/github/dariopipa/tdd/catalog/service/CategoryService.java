@@ -7,86 +7,73 @@ import io.github.dariopipa.tdd.catalog.exceptions.CategoryInUseException;
 import io.github.dariopipa.tdd.catalog.exceptions.CategoryNameAlreadyExistsExcpetion;
 import io.github.dariopipa.tdd.catalog.exceptions.EntityNotFoundException;
 import io.github.dariopipa.tdd.catalog.repository.CategoryRepository;
-import io.github.dariopipa.tdd.catalog.repository.ProductRepository;
 import io.github.dariopipa.tdd.catalog.transactionmanager.TransactionManager;
 
 public class CategoryService {
 
-	private CategoryRepository categoryRepository;
-	private TransactionManager transactionManager;
-	private ProductRepository productRepository;
+	private TransactionManager<CategoryRepository> transactionManager;
 
-	public CategoryService(CategoryRepository categoryRepository, TransactionManager transactionManager,
-			ProductRepository productRepository) {
-		this.categoryRepository = categoryRepository;
+	public CategoryService(TransactionManager<CategoryRepository> transactionManager) {
 		this.transactionManager = transactionManager;
-		this.productRepository = productRepository;
 	}
 
 	public Long createCategory(String name) {
-		return transactionManager.doInTransaction(() -> {
-			String normalizedName = validateAndNormalizeName(name);
+		String normalizedName = validateAndNormalizeName(name);
 
-			findByName(normalizedName);
+		return transactionManager.doInTransaction(repo -> {
+			ensureCategoryNameIsAvaiable(repo, normalizedName);
 
 			Category category = new Category(normalizedName);
-			return categoryRepository.create(category);
+			return repo.create(category);
 		});
 	}
 
 	public String delete(Long id) {
-		return transactionManager.doInTransaction(() -> {
-			Category existingCategory = findByIdInternal(id);
+		validateId(id);
+		return transactionManager.doInTransaction(repo -> {
+			Category existingCategory = categoryExists(repo, id);
 
-			long used = productRepository.countByCategoryId(existingCategory.getId());
+			long used = repo.countProductsByCategoryId(id);
 			if (used > 0) {
 				throw new CategoryInUseException();
 			}
 
-			return categoryRepository.delete(existingCategory);
+			return repo.delete(existingCategory);
 		});
 	}
 
 	public List<Category> findAll() {
-		return transactionManager.doInTransaction(() -> categoryRepository.findAll());
+		return transactionManager.doInTransaction(repo -> repo.findAll());
 	}
 
 	public Category findById(Long id) {
-		return transactionManager.doInTransaction(() -> findByIdInternal(id));
-	}
-
-	Category findByIdInternal(Long id) {
-		if (id == null) {
-			throw new IllegalArgumentException("id must be provided");
-		}
-		if (id <= 0) {
-			throw new IllegalArgumentException("id must be positive");
-		}
-
-		Category result = categoryRepository.findById(id);
-		if (result == null) {
-			throw new EntityNotFoundException("category with id:" + id + " not found");
-		}
-
-		return result;
+		validateId(id);
+		return transactionManager.doInTransaction(repo -> categoryExists(repo, id));
 	}
 
 	public Category update(Long entityId, String name) {
-		Category existingCategory = findByIdInternal(entityId);
+		String normalizedName = validateAndNormalizeName(name);
 
-		return transactionManager.doInTransaction(() -> {
-			String normalizedName = validateAndNormalizeName(name);
-			findByName(normalizedName);
+		return transactionManager.doInTransaction(repo -> {
+			Category existingCategory = categoryExists(repo, entityId);
+			ensureCategoryNameIsAvaiable(repo, normalizedName);
 
 			existingCategory.setName(normalizedName);
-
-			return categoryRepository.update(existingCategory);
+			return repo.update(existingCategory);
 		});
 	}
 
-	void findByName(String name) {
-		Category result = categoryRepository.findByName(name);
-		if (result != null) {
+	private Category categoryExists(CategoryRepository repo, Long id) {
+		Category categoryExists = repo.findById(id);
+		if (categoryExists == null) {
+			throw new EntityNotFoundException("category with id:" + id + " not found");
+		}
+		return categoryExists;
+	}
+
+	private void ensureCategoryNameIsAvaiable(CategoryRepository repo, String name) {
+		Category categoryExists = repo.findByName(name);
+		if (categoryExists != null) {
 			throw new CategoryNameAlreadyExistsExcpetion();
 		}
 	}
@@ -102,6 +89,15 @@ public class CategoryService {
 			throw new IllegalArgumentException("name must be provided");
 		}
 		return normalized;
+	}
+
+	private void validateId(Long id) {
+		if (id == null) {
+			throw new IllegalArgumentException("id must be provided");
+		}
+		if (id <= 0) {
+			throw new IllegalArgumentException("id must be positive");
+		}
 	}
 
 }
