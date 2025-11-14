@@ -9,7 +9,10 @@ import org.junit.Test;
 
 import io.github.dariopipa.tdd.catalog.entities.Category;
 import io.github.dariopipa.tdd.catalog.exceptions.JPARepoException;
+import io.github.dariopipa.tdd.catalog.repository.CategoryRepository;
+import io.github.dariopipa.tdd.catalog.repository.JpaCategoryRepositoryImpl;
 import io.github.dariopipa.tdd.catalog.transactionmanager.JPATransactionManager;
+import io.github.dariopipa.tdd.catalog.transactionmanager.TransactionManager;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
@@ -20,7 +23,7 @@ public class JPATransactionManagerTest {
 	private static final String CATEGORY_NAME = "new category";
 	private static final String CATEGORY_UPDATED_NAME = "new name";
 
-	private JPATransactionManager jpaTransactionManager;
+	private TransactionManager<CategoryRepository> jpaTransactionManager;
 	private EntityManagerFactory entityManagerFactory;
 	private EntityManager entityManager;
 
@@ -29,7 +32,7 @@ public class JPATransactionManagerTest {
 		entityManagerFactory = Persistence.createEntityManagerFactory(PU_NAME);
 		entityManager = entityManagerFactory.createEntityManager();
 
-		jpaTransactionManager = new JPATransactionManager(entityManager);
+		jpaTransactionManager = new JPATransactionManager<>(entityManager, JpaCategoryRepositoryImpl::new);
 	}
 
 	@After
@@ -42,10 +45,7 @@ public class JPATransactionManagerTest {
 	public void test_doInTransaction_shouldSucesfullySaveAndReturnTheResult() {
 		Category category = new Category(CATEGORY_NAME);
 
-		Long result = jpaTransactionManager.doInTransaction(() -> {
-			entityManager.persist(category);
-			return category.getId();
-		});
+		Long result = jpaTransactionManager.doInTransaction(repo -> repo.create(category));
 
 		assertThat(result).isEqualTo(category.getId());
 
@@ -68,14 +68,11 @@ public class JPATransactionManagerTest {
 
 		Long existingCategoryId = existingCategory.getId();
 
-		assertThatThrownBy(() -> {
-			jpaTransactionManager.doInTransaction(() -> {
-				Category categoryToUpdate = entityManager.find(Category.class, existingCategoryId);
-				categoryToUpdate.setName(CATEGORY_UPDATED_NAME);
-
-				throw new RuntimeException("Persistence failed.");
-			});
-		}).isInstanceOf(RuntimeException.class).hasMessage("Persistence failed.");
+		assertThatThrownBy(() -> jpaTransactionManager.doInTransaction(repo -> {
+			Category categoryToUpdate = repo.findById(existingCategoryId);
+			categoryToUpdate.setName(CATEGORY_UPDATED_NAME);
+			throw new RuntimeException("Persistence failed.");
+		})).isInstanceOf(RuntimeException.class).hasMessage("Persistence failed.");
 
 		EntityManager verifyEntityManager = entityManagerFactory.createEntityManager();
 		Category foundCategory = verifyEntityManager.find(Category.class, existingCategoryId);
@@ -97,8 +94,8 @@ public class JPATransactionManagerTest {
 		Long existingCategoryId = existingCategory.getId();
 
 		assertThatThrownBy(() -> {
-			jpaTransactionManager.doInTransaction(() -> {
-				Category categoryToUpdate = entityManager.find(Category.class, existingCategoryId);
+			jpaTransactionManager.doInTransaction(repo -> {
+				Category categoryToUpdate = repo.findById(existingCategoryId);
 				categoryToUpdate.setName(CATEGORY_UPDATED_NAME);
 
 				throw new JPARepoException("Persistence failed.");

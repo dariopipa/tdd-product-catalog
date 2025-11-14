@@ -1,8 +1,7 @@
 package io.github.dariopipa.tdd.catalog.transactionmanager;
 
-import io.github.dariopipa.tdd.catalog.exceptions.JPARepoException;
+import java.util.function.Function;
 
 @FunctionalInterface
-public interface TransactionCode<T> {
-	T execute() throws JPARepoException;
+public interface TransactionCode<R, T> extends Function<R, T> {
 }
