@@ -21,3 +21,6 @@ jobs:
 
       -  name: Testing workflow command
          run: echo "workflow is working"
+         
+      - name: Skip tests on purpose to see pom.xml downloads
+        run: mvn clean verify -DskipTests
