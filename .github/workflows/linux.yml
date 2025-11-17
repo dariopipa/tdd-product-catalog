@@ -30,14 +30,15 @@ jobs:
             ~/.sonar/cache
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml', '**/*.yml') }}
           restore-keys: ${{ runner.os }}-m2-
-
+			
       - name: Build with Maven & Scan with Sonar
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: xvfb-run -B verify ${{ matrix.additional-maven-args }}
 
-      - name: Send coverage data to coveralls.io
-        uses: coverallsapp/github-action@v2
-        with:
+      -  name: Send coverage data to coveralls.io
+         uses: coverallsapp/github-action@v2
+         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          debug: true
