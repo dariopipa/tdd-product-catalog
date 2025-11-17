@@ -2,7 +2,7 @@ name: Java CI with Maven in Linux
 
 on:
    push:
-   pull_request: 
+   pull_request:
 
 
 jobs:
@@ -24,8 +24,12 @@ jobs:
          with:
             path: ~/.m2
             key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml', '**/*.yml') }}
-            restore-keys: |
-               ${{ runner.os }}-m2-
+            restore-keys: ${{ runner.os }}-m2-
 
-      -  name: Skip tests on purpose to see pom.xml downloads
-         run: mvn clean verify -DskipTests
+      -  name: Build with maven
+         run: xvfb-run mvn verify
+
+      -  name: Send coverage data to coveralls.io
+      uses: coverallsapp/github-action@v2
+      with:
+         github-token: ${{ secrets.GITHUB_TOKEN }}
