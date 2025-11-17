@@ -32,5 +32,5 @@ jobs:
       -  name: Send coverage data to coveralls.io
          uses: coverallsapp/github-action@v2
          with:
-            github-token: ${{ secrets.GITHUB_TOKEN}}
-		 	debug: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          debug: true
