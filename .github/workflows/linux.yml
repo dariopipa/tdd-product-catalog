@@ -30,7 +30,6 @@ jobs:
       -  name: Build with Maven & Scan with Sonar
          env:
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-         run: xvfb-run mvn -B verify sonar:sonar -Dsonar.projectKey=dariopipa_tdd-product-catalog
          run: >
                 xvfb-run mvn -B verify
                 sonar:sonar
