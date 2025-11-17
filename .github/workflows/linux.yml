@@ -1,8 +1,8 @@
 name: Java CI with Maven in Linux
 
 on:
-   push: null
-   pull_request: null
+   push:
+   pull_request:
 
 jobs:
    build:
