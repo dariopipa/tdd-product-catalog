@@ -33,6 +33,7 @@
 		<coveralls.version>5.0.0</coveralls.version>
 
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
+		<sonar.organization>dariopipa</sonar.organization>
 		<sonar.issue.ignore.multicriteria>e11,e12,e13,e14,e15,e16,e17</sonar.issue.ignore.multicriteria>
 
 		<!-- e11 — Disable S117 (naming convention) for CatalogSwingView.java -->
