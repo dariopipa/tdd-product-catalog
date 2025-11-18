@@ -24,7 +24,7 @@
 		<postgresql.version>42.7.7</postgresql.version>
 		<h2.version>2.2.224</h2.version>
 		<build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
-		<maven-failsafe-plugin.version>3.5.3</maven-failsafe-plugin.version>
+		<maven-failsafe-plugin.version>3.5.4</maven-failsafe-plugin.version>
 		<testcontainers-postgresql.version>1.21.3</testcontainers-postgresql.version>
 		<picocli.version>4.7.6</picocli.version>
 		<sonar.version>5.2.0.4988</sonar.version>
