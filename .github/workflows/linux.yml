@@ -37,7 +37,7 @@ jobs:
                 -Dsonar.host.url=https://sonarcloud.io
                 -Dsonar.organization=dariopipa
                 -Dsonar.projectKey=dariopipa_tdd-product-catalog
-                
+         
       -  name: Send coverage data to coveralls.io
          uses: coverallsapp/github-action@v2
          with:
