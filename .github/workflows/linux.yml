@@ -2,7 +2,8 @@ name: Java CI with Maven in Linux
 
 on:
    push:
-   pull_request:
+      branches: 
+         - main
 
 jobs:
    build:
@@ -36,16 +37,17 @@ jobs:
                 -Dsonar.host.url=https://sonarcloud.io
                 -Dsonar.organization=dariopipa
                 -Dsonar.projectKey=dariopipa_tdd-product-catalog
-                
-      -  name: Generate Junit Reports
-         run: mvn surefire-report:report-only
-      
-      -  name: Archive Junit Reports
-         uses: actions/upload-artifact@v4
-         with:
-           path: '**target/reports'
          
       -  name: Send coverage data to coveralls.io
          uses: coverallsapp/github-action@v2
          with:
             github-token: ${{ secrets.GITHUB_TOKEN }}
+            
+      - name: Generate the site
+        run: mvn site
+        
+      - name: Archive the site generated
+        uses: actions/upload-artifact@v4
+        with:
+          path: '**target/site'
+        

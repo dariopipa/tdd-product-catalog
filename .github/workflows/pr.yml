@@ -1,0 +1,47 @@
+name: PR CI integration validation for Linux
+
+on:
+   pull_request:
+
+jobs:
+   build:
+      runs-on: ubuntu-latest
+      steps:
+      -  uses: actions/checkout@v4
+         with:
+            fetch-depth: 0
+
+      -  name: Set up JDK 17
+         uses: actions/setup-java@v4
+         with:
+            java-version: 17
+            distribution: temurin
+
+      -  name: Cache Maven & Sonar packages
+         uses: actions/cache@v4
+         with:
+            path: |
+               ~/.m2
+               ~/.sonar/cache
+            key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml', '**/*.yml') }}
+            restore-keys: ${{ runner.os }}-m2-
+
+      -  name: Build with Maven & Scan with Sonar
+         run: xvfb-run mvn -B verify -Pmutation-testing
+
+      -  name: Generate Junit Reports
+         if: ${{ always() }}
+         run: mvn surefire-report:report-only
+         
+      -  name: Archive Junit Reports
+         uses: actions/upload-artifact@v4
+         if: ${{ always() }}
+         with:
+           path: '**target/reports'
+
+      -  name: Archive PIT Report
+         uses: actions/upload-artifact@v4
+         if: ${{ always() }}
+         with:
+            name: PIT-Report
+            path: '**/target/pit-reports'
