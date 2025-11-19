@@ -87,6 +87,7 @@ public class App implements Callable<Void> {
 				log.severe(e.getMessage());
 			}
 		});
+
 		return null;
 	}
 }
