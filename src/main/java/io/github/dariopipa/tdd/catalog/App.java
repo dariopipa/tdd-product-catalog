@@ -33,7 +33,7 @@ public class App implements Callable<Void> {
 	private String jdbcUser = "postgres";
 
 	@Option(names = { "--jdbc-password" }, description = "Database password")
-	private String jdbcPassword = "postgres";
+	private String jdbcPassword = "postgres";// NOSONAR
 
 	@Option(names = {
 			"--hibernate-ddl" }, description = "Hibernate hbm2ddl.auto mode (create-drop, update, validate, none)")
