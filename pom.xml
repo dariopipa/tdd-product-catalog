@@ -9,7 +9,7 @@
 	<artifactId>tdd-product-catalog</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 
-	<name>AST Product Catalog (TDD Project)</name>
+	<name>Product Catalog (AST Project)</name>
 	<description>
 		A product catalog application developed using Test-Driven Development
 		for the AST course.
@@ -365,8 +365,7 @@
 							<report>index</report>
 							<report>summary</report>
 							<report>dependencies</report>
-							<report>dependency-info</report>
-							<report>licenses</report>
+							<report>plugins</report>
 						</reports>
 					</reportSet>
 				</reportSets>
