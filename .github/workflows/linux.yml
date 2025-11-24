@@ -47,7 +47,7 @@ jobs:
            run: mvn site
 
          - name: Archive the site generated
-           uses: actions/upload-artifact@v4
+           uses: actions/upload-artifact@v5
            with:
               path: "**target/site"
 

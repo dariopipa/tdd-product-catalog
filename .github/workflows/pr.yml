@@ -50,13 +50,13 @@ jobs:
            run: mvn surefire-report:report-only
 
          - name: Archive Junit Reports
-           uses: actions/upload-artifact@v4
+           uses: actions/upload-artifact@v5
            if: ${{ always() }}
            with:
               path: "**target/reports"
 
          - name: Archive PIT Report
-           uses: actions/upload-artifact@v4
+           uses: actions/upload-artifact@v5
            if: ${{ always() }}
            with:
               name: PIT-Report
