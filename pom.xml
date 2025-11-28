@@ -26,7 +26,7 @@
 		<jakarta.persistence.version>3.1.0</jakarta.persistence.version>
 		<hibernate.core.version>6.4.8.Final</hibernate.core.version>
 		<postgresql.version>42.7.7</postgresql.version>
-		<h2.version>2.2.224</h2.version>
+		<h2.version>2.4.240</h2.version>
 		<build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
 		<maven-failsafe-plugin.version>3.5.3</maven-failsafe-plugin.version>
 		<testcontainers-postgresql.version>1.21.3</testcontainers-postgresql.version>
