@@ -263,6 +263,14 @@
 				<version>${maven-failsafe-plugin.version}</version>
 				<executions>
 					<execution>
+						<id>default-it</id>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>e2e-tests</id>
 						<goals>
 							<goal>integration-test</goal>
 							<goal>verify</goal>
@@ -403,6 +411,7 @@
 					<reportSet>
 						<reports>
 							<report>report-only</report>
+							<report>failsafe-report-only</report>
 						</reports>
 					</reportSet>
 				</reportSets>
