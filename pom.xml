@@ -33,7 +33,7 @@
 		<picocli.version>4.7.6</picocli.version>
 		<sonar.version>5.2.0.4988</sonar.version>
 		<jacoco.version>0.8.12</jacoco.version>
-		<pitest.version>1.17.3</pitest.version>
+		<pitest.version>1.22.0</pitest.version>
 		<coveralls.version>5.0.0</coveralls.version>
 		<surefire-report-plugin.version>3.5.2</surefire-report-plugin.version>
 
